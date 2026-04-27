@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --c1: #0a0a0f;
+  --c2: #12121a;
+  --c3: #1a1a2e;
+  --acc: #e50914;
+  --acc2: #f5a623;
+  --txt: #ffffff;
+  --txt2: #b0b0c0;
+  --txt3: #6b6b80;
+  --border: rgba(255, 255, 255, 0.07);
+  --success: #22c55e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--c1);
+  color: var(--txt);
+  font-family: 'DM Sans', sans-serif;
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* Font display */
+.font-display { font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; }
+
+/* Cineal button styles */
+.btn-primary {
+  background: var(--acc);
+  color: #fff;
+  border: none;
+  padding: 11px 28px;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-primary:hover { background: #ff0f1e; transform: translateY(-1px); }
+
+.btn-secondary {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--txt);
+  padding: 11px 22px;
+  border-radius: 5px;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.12); }
+
+/* Card hover */
+.movie-card { transition: transform 0.2s; }
+.movie-card:hover { transform: translateY(-3px); }
+
+/* Genre badge */
+.genre-tag {
+  background: rgba(229,9,20,0.1);
+  border: 1px solid rgba(229,9,20,0.25);
+  color: #ff6b6b;
+  font-size: 11px;
+  padding: 3px 12px;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+/* SQ Subtitle badge */
+.sq-badge {
+  background: rgba(229,9,20,0.85);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 2px;
+  letter-spacing: 0.5px;
+}
