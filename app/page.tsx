@@ -1,82 +1,143 @@
 'use client'
+import { useState, useEffect } from 'react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import MovieCard, { TrendingCard } from '@/components/movie/MovieCard'
 import Link from 'next/link'
-
-const hero = {
-  title: 'Furiosa: A Mad Max Saga', year: 2024, duration: '2h 28min', rating: 7.8, genre: 'Aksion',
-  description_sq: 'Udhëtimi epik i luftëtares Furiosa nëpër botën post-apokaliptike, duke sfiduar tiranin e fuqishëm për të rikërkuar atdheun.',
-  backdrop_url: 'https://image.tmdb.org/t/p/original/xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg',
-  poster_url: 'https://image.tmdb.org/t/p/w500/iADOJ8Zymht2JPMoy3R7xceZprc.jpg', slug: 'furiosa',
-}
-
-const DEMO_MOVIES = [
-  { id:'1', title:'Inception', slug:'inception', year:2010, genre:'Sci-Fi', rating:8.8, poster_url:'https://image.tmdb.org/t/p/w300/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg', backdrop_url:'', subtitle_url:'/sq.vtt', embed_url:'', description_sq:'', duration:'2h 28min', status:'live', created_at:'' },
-  { id:'2', title:'The Dark Knight', slug:'the-dark-knight', year:2008, genre:'Aksion', rating:9.0, poster_url:'https://image.tmdb.org/t/p/w300/qJ2tW6WMUDux911r6m7haRef0WH.jpg', backdrop_url:'', subtitle_url:'/sq.vtt', embed_url:'', description_sq:'', duration:'2h 32min', status:'live', created_at:'' },
-  { id:'3', title:'Interstellar', slug:'interstellar', year:2014, genre:'Sci-Fi', rating:8.6, poster_url:'https://image.tmdb.org/t/p/w300/gEU2QniE6E77NI6lCU6MxlNBvIE.jpg', backdrop_url:'', subtitle_url:'/sq.vtt', embed_url:'', description_sq:'', duration:'2h 49min', status:'live', created_at:'' },
-  { id:'4', title:'Oppenheimer', slug:'oppenheimer', year:2023, genre:'Drama', rating:8.5, poster_url:'https://image.tmdb.org/t/p/w300/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', backdrop_url:'', subtitle_url:'/sq.vtt', embed_url:'', description_sq:'', duration:'3h', status:'live', created_at:'' },
-  { id:'5', title:'Dune: Part Two', slug:'dune-part-two', year:2024, genre:'Sci-Fi', rating:8.5, poster_url:'https://image.tmdb.org/t/p/w300/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg', backdrop_url:'', subtitle_url:'', embed_url:'', description_sq:'', duration:'2h 46min', status:'live', created_at:'' },
-  { id:'6', title:'Furiosa', slug:'furiosa', year:2024, genre:'Aksion', rating:7.8, poster_url:'https://image.tmdb.org/t/p/w300/iADOJ8Zymht2JPMoy3R7xceZprc.jpg', backdrop_url:'', subtitle_url:'/sq.vtt', embed_url:'', description_sq:'', duration:'2h 28min', status:'live', created_at:'' },
-  { id:'7', title:'Joker', slug:'joker', year:2019, genre:'Drama', rating:8.4, poster_url:'https://image.tmdb.org/t/p/w300/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg', backdrop_url:'', subtitle_url:'/sq.vtt', embed_url:'', description_sq:'', duration:'2h 2min', status:'live', created_at:'' },
-  { id:'8', title:'Top Gun: Maverick', slug:'top-gun-maverick', year:2022, genre:'Aksion', rating:8.3, poster_url:'https://image.tmdb.org/t/p/w300/mavMi1zf4UwgABL5e4aCCFQKdnf.jpg', backdrop_url:'', subtitle_url:'/sq.vtt', embed_url:'', description_sq:'', duration:'2h 11min', status:'live', created_at:'' },
-  { id:'9', title:'One Piece Film: Red', slug:'one-piece-red', year:2022, genre:'Anime', rating:7.6, poster_url:'https://image.tmdb.org/t/p/w300/yXNNxnJ3MuJ0FkJUmqDQpw2zqBg.jpg', backdrop_url:'', subtitle_url:'/sq.vtt', embed_url:'', description_sq:'', duration:'1h 55min', status:'live', created_at:'' },
-  { id:'10', title:'Demon Slayer: Mugen', slug:'demon-slayer-mugen', year:2020, genre:'Anime', rating:8.3, poster_url:'https://image.tmdb.org/t/p/w300/h8Rb9gBr48ODIwYUttZNYeMWeUU.jpg', backdrop_url:'', subtitle_url:'/sq.vtt', embed_url:'', description_sq:'', duration:'1h 57min', status:'live', created_at:'' },
-  { id:'11', title:'Parasite', slug:'parasite', year:2019, genre:'Thriller', rating:8.5, poster_url:'https://image.tmdb.org/t/p/w300/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg', backdrop_url:'', subtitle_url:'/sq.vtt', embed_url:'', description_sq:'', duration:'2h 12min', status:'live', created_at:'' },
-  { id:'12', title:'The Batman', slug:'the-batman', year:2022, genre:'Aksion', rating:7.9, poster_url:'https://image.tmdb.org/t/p/w300/74xTEgt7R36Fpooo50r9T25onhq.jpg', backdrop_url:'', subtitle_url:'/sq.vtt', embed_url:'', description_sq:'', duration:'2h 56min', status:'live', created_at:'' },
-] as any[]
-
-const TRENDING = DEMO_MOVIES.slice(0, 5)
-const sections = [
-  { title: 'Filma Aksion', href: '/filma?zhanri=Aksion', movies: DEMO_MOVIES.filter((m:any)=>m.genre==='Aksion').slice(0,6) },
-  { title: 'Anime', href: '/anime', movies: DEMO_MOVIES.filter((m:any)=>m.genre==='Anime').slice(0,6) },
-  { title: 'Top Rated', href: '/filma?sort=rating', movies: [...DEMO_MOVIES].sort((a:any,b:any)=>b.rating-a.rating).slice(0,6) },
-]
+import { supabase } from '@/lib/supabase'
 
 export default function HomePage() {
+  const [movies, setMovies] = useState<any[]>([])
+  const [trending, setTrending] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchMovies() {
+      try {
+        const { data } = await supabase
+          .from('movies')
+          .select('*')
+          .eq('status', 'live')
+          .order('created_at', { ascending: false })
+          .limit(24)
+        if (data) {
+          setMovies(data)
+          setTrending(data.filter((m: any) => m.is_trending).slice(0, 5) || data.slice(0, 5))
+        }
+      } catch (e) {
+        console.error(e)
+      }
+      setLoading(false)
+    }
+    fetchMovies()
+  }, [])
+
+  const featured = movies[0]
+
   return (
-    <div style={{ background: '#0a0a0f', minHeight: '100vh' }}>
+    <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
-      <div style={{ position: 'relative', height: '480px', overflow: 'hidden', display: 'flex', alignItems: 'flex-end', padding: '40px 32px' }}>
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: `linear-gradient(to right, rgba(10,10,15,0.95) 40%, rgba(10,10,15,0.3) 100%), url(${hero.backdrop_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0a0a0f 0%, transparent 50%)' }} />
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: '520px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(229,9,20,0.15)', border: '1px solid rgba(229,9,20,0.3)', color: '#ff6b6b', fontSize: '11px', fontWeight: 500, letterSpacing: '1.5px', padding: '4px 12px', borderRadius: '20px', marginBottom: '14px', textTransform: 'uppercase' }}>▶ Tani në Cineal</div>
-          <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '52px', letterSpacing: '2px', lineHeight: 1, marginBottom: '12px' }}>{hero.title}</h1>
-          <div style={{ display: 'flex', gap: '14px', marginBottom: '14px', alignItems: 'center' }}>
-            <span style={{ color: '#f5a623', fontWeight: 500 }}>★ {hero.rating}</span>
-            <span style={{ color: '#b0b0c0', fontSize: '13px' }}>{hero.year}</span>
-            <span style={{ color: '#b0b0c0', fontSize: '13px' }}>{hero.duration}</span>
-          </div>
-          <p style={{ fontSize: '13px', color: '#b0b0c0', lineHeight: 1.7, marginBottom: '24px', maxWidth: '380px', fontWeight: 300 }}>{hero.description_sq}</p>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <Link href={`/film/${hero.slug}`}><button className="btn-primary"><div style={{ width:0, height:0, borderTop:'7px solid transparent', borderBottom:'7px solid transparent', borderLeft:'12px solid #fff' }} />Shiko Tani</button></Link>
-            <Link href={`/film/${hero.slug}`}><button className="btn-secondary">+ Më Shumë</button></Link>
+
+      {/* HERO */}
+      {featured && (
+        <div style={{ position: 'relative', height: '70vh', minHeight: '500px', overflow: 'hidden' }}>
+          <div style={{
+            position: 'absolute', inset: 0,
+            backgroundImage: `url(${featured.backdrop_url || featured.poster_url})`,
+            backgroundSize: 'cover', backgroundPosition: 'center',
+            filter: 'brightness(0.4)'
+          }} />
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(to right, rgba(10,10,15,0.95) 40%, transparent 100%)'
+          }} />
+          <div style={{ position: 'relative', zIndex: 1, padding: '120px 60px 60px', maxWidth: '600px' }}>
+            <div style={{ fontSize: '11px', color: '#e50914', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>
+              🔥 Film i Ri
+            </div>
+            <h1 style={{ fontSize: '42px', fontWeight: 700, lineHeight: 1.1, marginBottom: '12px' }}>
+              {featured.title_sq || featured.title}
+            </h1>
+            <div style={{ display: 'flex', gap: '12px', fontSize: '13px', color: '#b0b0c0', marginBottom: '16px' }}>
+              <span>{featured.year}</span>
+              <span>•</span>
+              <span>{featured.genre}</span>
+              <span>•</span>
+              <span>⭐ {featured.rating}</span>
+              {featured.duration && <><span>•</span><span>{featured.duration}</span></>}
+            </div>
+            {featured.description && (
+              <p style={{ fontSize: '14px', color: '#b0b0c0', lineHeight: 1.6, marginBottom: '24px', maxWidth: '500px' }}>
+                {featured.description}
+              </p>
+            )}
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <Link href={`/film/${featured.slug}`} style={{
+                background: '#e50914', color: '#fff', padding: '12px 28px',
+                borderRadius: '5px', textDecoration: 'none', fontWeight: 600, fontSize: '14px'
+              }}>
+                ▶ Shiko Tani
+              </Link>
+              <Link href={`/film/${featured.slug}`} style={{
+                background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '12px 28px',
+                borderRadius: '5px', textDecoration: 'none', fontWeight: 500, fontSize: '14px',
+                border: '1px solid rgba(255,255,255,0.15)'
+              }}>
+                + Më Shumë
+              </Link>
+            </div>
           </div>
         </div>
+      )}
+
+      <div style={{ padding: '40px 60px' }}>
+
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '60px', color: '#6b6b80' }}>
+            Duke ngarkuar filmat...
+          </div>
+        )}
+
+        {!loading && movies.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '60px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎬</div>
+            <div style={{ fontSize: '18px', fontWeight: 500, marginBottom: '8px' }}>Nuk ka filma akoma</div>
+            <div style={{ fontSize: '14px', color: '#6b6b80' }}>Shto filmat e parë nga Admin Panel</div>
+          </div>
+        )}
+
+        {/* TRENDING */}
+        {trending.length > 0 && (
+          <div style={{ marginBottom: '40px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 600 }}>🔥 TRENDING</h2>
+              <Link href="/trending" style={{ fontSize: '13px', color: '#e50914', textDecoration: 'none' }}>Shiko të gjitha →</Link>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
+              {trending.map((m: any) => (
+                <TrendingCard key={m.id} movie={m} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TË GJITHA FILMAT */}
+        {movies.length > 0 && (
+          <div style={{ marginBottom: '40px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 600 }}>🎬 Filmat</h2>
+              <Link href="/filma" style={{ fontSize: '13px', color: '#e50914', textDecoration: 'none' }}>Shiko të gjitha →</Link>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px' }}>
+              {movies.map((m: any) => (
+                <MovieCard key={m.id} movie={m} />
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
 
-      <div style={{ padding: '32px 32px 0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '20px', letterSpacing: '2px' }}>TRENDING</span>
-          <Link href="/trending" style={{ fontSize: '12px', color: '#6b6b80', textDecoration: 'none' }}>Shiko të gjitha →</Link>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px' }}>
-          {TRENDING.map((m:any, i:number) => <TrendingCard key={m.id} movie={m} index={i} />)}
-        </div>
-      </div>
-
-      {sections.map(sec => (
-        <div key={sec.title} style={{ padding: '28px 32px 0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '20px', letterSpacing: '2px' }}>{sec.title}</span>
-            <Link href={sec.href} style={{ fontSize: '12px', color: '#6b6b80', textDecoration: 'none' }}>Shiko të gjitha →</Link>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '10px' }}>
-            {sec.movies.map((m:any) => <MovieCard key={m.id} movie={m} />)}
-          </div>
-        </div>
-      ))}
       <Footer />
     </div>
   )
