@@ -5,22 +5,26 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// ---- TYPES ----
 export type Movie = {
   id: string
   title: string
   title_sq?: string
   slug: string
-  year: number
-  duration: string
-  genre: string
-  rating: number
-  description_sq: string
-  poster_url: string
-  backdrop_url: string
-  embed_url: string       // Bunny.net iframe URL
-  subtitle_url?: string   // .vtt URL
+  year?: number
+  duration?: string
+  genre?: string
+  rating?: number
+  description?: string
+  description_sq?: string
+  poster_url?: string
+  backdrop_url?: string
+  embed_url?: string
+  video_url?: string
+  subtitle_url?: string
+  is_trending?: boolean
+  is_featured?: boolean
   status: 'live' | 'draft'
+  views?: number
   created_at: string
 }
 
@@ -33,7 +37,6 @@ export type User = {
   created_at: string
 }
 
-// ---- MOVIE QUERIES ----
 export async function getMovies(limit = 20) {
   const { data, error } = await supabase
     .from('movies')
@@ -50,7 +53,6 @@ export async function getMovieBySlug(slug: string) {
     .from('movies')
     .select('*')
     .eq('slug', slug)
-    .eq('status', 'live')
     .single()
   if (error) throw error
   return data as Movie
@@ -68,12 +70,13 @@ export async function getMoviesByGenre(genre: string, limit = 12) {
   return data as Movie[]
 }
 
-export async function getTrendingMovies(limit = 5) {
+export async function getTrendingMovies(limit = 10) {
   const { data, error } = await supabase
     .from('movies')
     .select('*')
     .eq('status', 'live')
-    .order('rating', { ascending: false })
+    .eq('is_trending', true)
+    .order('created_at', { ascending: false })
     .limit(limit)
   if (error) throw error
   return data as Movie[]
@@ -90,7 +93,6 @@ export async function searchMovies(query: string) {
   return data as Movie[]
 }
 
-// ---- ADMIN QUERIES ----
 export async function getAllMovies() {
   const { data, error } = await supabase
     .from('movies')
@@ -129,7 +131,6 @@ export async function deleteMovie(id: string) {
   if (error) throw error
 }
 
-// ---- USERS (Admin) ----
 export async function getAllUsers() {
   const { data, error } = await supabase
     .from('profiles')
