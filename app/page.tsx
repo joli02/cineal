@@ -22,7 +22,8 @@ export default function HomePage() {
           .limit(24)
         if (data) {
           setMovies(data)
-          setTrending(data.filter((m: any) => m.is_trending).slice(0, 5) || data.slice(0, 5))
+          const tr = data.filter((m: any) => m.is_trending)
+          setTrending(tr.length > 0 ? tr.slice(0, 5) : data.slice(0, 5))
         }
       } catch (e) {
         console.error(e)
@@ -38,7 +39,6 @@ export default function HomePage() {
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
-      {/* HERO */}
       {featured && (
         <div style={{ position: 'relative', height: '70vh', minHeight: '500px', overflow: 'hidden' }}>
           <div style={{
@@ -106,7 +106,6 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* TRENDING */}
         {trending.length > 0 && (
           <div style={{ marginBottom: '40px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -121,7 +120,6 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* TË GJITHA FILMAT */}
         {movies.length > 0 && (
           <div style={{ marginBottom: '40px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
