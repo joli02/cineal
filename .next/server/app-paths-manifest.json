@@ -1,6 +1,18 @@
 {
-  "/page": "app/page.js",
+  "/anime/page": "app/anime/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/auth/login/page": "app/auth/login/page.js",
+  "/filma/page": "app/filma/page.js",
+  "/auth/register/page": "app/auth/register/page.js",
   "/api/admin/auth/route": "app/api/admin/auth/route.js",
+  "/film/[slug]/page": "app/film/[slug]/page.js",
+  "/kontakt/page": "app/kontakt/page.js",
+  "/kushtet/page": "app/kushtet/page.js",
+  "/page": "app/page.js",
+  "/rreth-nesh/page": "app/rreth-nesh/page.js",
+  "/seriale/page": "app/seriale/page.js",
+  "/trending/page": "app/trending/page.js",
+  "/privatesia/page": "app/privatesia/page.js",
   "/admin/login/page": "app/admin/login/page.js",
   "/admin/page": "app/admin/page.js"
 }

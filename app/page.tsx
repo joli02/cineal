@@ -114,8 +114,8 @@ export default function HomePage() {
               <Link href="/trending" style={{ fontSize: '13px', color: '#e50914', textDecoration: 'none' }}>Shiko të gjitha →</Link>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
-              {trending.map((m: any) => (
-                <TrendingCard key={m.id} movie={m} />
+              {trending.map((m: any, i: number) => (
+                <TrendingCard key={m.id} movie={m} index={i} />
               ))}
             </div>
           </div>
