@@ -103,6 +103,7 @@ export default function Navbar() {
                 {/* Menu Items */}
                 {[
                   { href: '/watchlist', icon: '📋', label: 'Watchlist ime' },
+{ href: '/preferuarat', icon: '❤️', label: 'Të preferuarat' },
                   { href: '/historiku', icon: '🕐', label: 'Historiku' },
                   { href: '/settings', icon: '⚙️', label: 'Cilësimet' },
                 ].map(item => (
