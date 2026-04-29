@@ -1,26 +1,56 @@
 'use client'
+import { useState, useEffect } from 'react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import MovieCard from '@/components/movie/MovieCard'
-
-const TRENDING = [
-  { id:'1', title:'Dune: Part Two', slug:'dune-part-two', year:2024, genre:'Sci-Fi', rating:8.5, poster_url:'https://image.tmdb.org/t/p/w300/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg', backdrop_url:'', subtitle_url:'', embed_url:'', description_sq:'', duration:'2h 46min', status:'live', created_at:'' },
-  { id:'2', title:'Furiosa', slug:'furiosa', year:2024, genre:'Aksion', rating:7.8, poster_url:'https://image.tmdb.org/t/p/w300/iADOJ8Zymht2JPMoy3R7xceZprc.jpg', backdrop_url:'', subtitle_url:'/sq.vtt', embed_url:'', description_sq:'', duration:'2h 28min', status:'live', created_at:'' },
-  { id:'3', title:'Oppenheimer', slug:'oppenheimer', year:2023, genre:'Drama', rating:8.5, poster_url:'https://image.tmdb.org/t/p/w300/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', backdrop_url:'', subtitle_url:'/sq.vtt', embed_url:'', description_sq:'', duration:'3h', status:'live', created_at:'' },
-  { id:'4', title:'The Dark Knight', slug:'the-dark-knight', year:2008, genre:'Aksion', rating:9.0, poster_url:'https://image.tmdb.org/t/p/w300/qJ2tW6WMUDux911r6m7haRef0WH.jpg', backdrop_url:'', subtitle_url:'/sq.vtt', embed_url:'', description_sq:'', duration:'2h 32min', status:'live', created_at:'' },
-  { id:'5', title:'Inception', slug:'inception', year:2010, genre:'Sci-Fi', rating:8.8, poster_url:'https://image.tmdb.org/t/p/w300/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg', backdrop_url:'', subtitle_url:'/sq.vtt', embed_url:'', description_sq:'', duration:'2h 28min', status:'live', created_at:'' },
-  { id:'6', title:'Parasite', slug:'parasite', year:2019, genre:'Thriller', rating:8.5, poster_url:'https://image.tmdb.org/t/p/w300/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg', backdrop_url:'', subtitle_url:'/sq.vtt', embed_url:'', description_sq:'', duration:'2h 12min', status:'live', created_at:'' },
-] as any[]
+import { supabase } from '@/lib/supabase'
 
 export default function TrendingPage() {
+  const [movies, setMovies] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchTrending() {
+      const { data } = await supabase
+        .from('movies')
+        .select('*')
+        .eq('status', 'live')
+        .eq('is_trending', true)
+        .order('created_at', { ascending: false })
+      if (data && data.length > 0) {
+        setMovies(data)
+      } else {
+        const { data: all } = await supabase
+          .from('movies')
+          .select('*')
+          .eq('status', 'live')
+          .order('rating', { ascending: false })
+          .limit(12)
+        if (all) setMovies(all)
+      }
+      setLoading(false)
+    }
+    fetchTrending()
+  }, [])
+
   return (
-    <div style={{ background: '#0a0a0f', minHeight: '100vh' }}>
+    <div style={{ background: '#0a0a0f', minHeight: '100vh', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
       <div style={{ padding: '32px 32px 0' }}>
-        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '32px', letterSpacing: '3px', marginBottom: '4px' }}>TRENDING</h1>
+        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '32px', letterSpacing: '3px', marginBottom: '4px' }}>🔥 TRENDING</h1>
         <p style={{ fontSize: '13px', color: '#6b6b80', marginBottom: '24px' }}>Filmat më të ndjekur këtë javë</p>
+        {loading && <p style={{ color: '#6b6b80' }}>Duke ngarkuar...</p>}
+        {!loading && movies.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔥</div>
+            <div style={{ fontSize: '18px', fontWeight: 500, marginBottom: '8px' }}>Nuk ka filma trending</div>
+            <div style={{ fontSize: '13px', color: '#6b6b80' }}>Shto filma nga Admin Panel dhe aktivizo Trending</div>
+          </div>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '14px', paddingBottom: '40px' }}>
-          {TRENDING.map((m:any) => <MovieCard key={m.id} movie={m} />)}
+          {movies.map((m: any) => (
+            <MovieCard key={m.id} movie={m} />
+          ))}
         </div>
       </div>
       <Footer />
