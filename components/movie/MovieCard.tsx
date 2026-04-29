@@ -53,8 +53,25 @@ export default function MovieCard({ movie }: { movie: any }) {
   }
 
   return (
-    <Link href={`/film/${movie.slug}`} style={{ textDecoration: 'none' }}>
-      <div style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', background: '#12121a', cursor: 'pointer' }}>
+    <div style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', background: '#12121a', cursor: 'pointer' }}>
+      
+      {/* Ikonat ❤️ dhe + JASHTË link-ut — gjithmonë klikueshme */}
+      {user && (
+        <div style={{ position: 'absolute', bottom: '52px', right: '6px', display: 'flex', flexDirection: 'column', gap: '5px', zIndex: 10 }}>
+          <button onClick={toggleFavorites}
+            title={inFavorites ? 'Hiq nga të preferuarat' : 'Shto te të preferuarat'}
+            style={{ width: '28px', height: '28px', borderRadius: '50%', background: inFavorites ? 'rgba(229,9,20,0.95)' : 'rgba(0,0,0,0.8)', border: `1px solid ${inFavorites ? '#e50914' : 'rgba(255,255,255,0.4)'}`, color: '#fff', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+            {inFavorites ? '❤️' : '🤍'}
+          </button>
+          <button onClick={toggleWatchlist}
+            title={inWatchlist ? 'Hiq nga watchlist' : 'Shto te watchlist'}
+            style={{ width: '28px', height: '28px', borderRadius: '50%', background: inWatchlist ? 'rgba(34,197,94,0.95)' : 'rgba(0,0,0,0.8)', border: `1px solid ${inWatchlist ? '#22c55e' : 'rgba(255,255,255,0.4)'}`, color: '#fff', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, backdropFilter: 'blur(4px)' }}>
+            {inWatchlist ? '✓' : '+'}
+          </button>
+        </div>
+      )}
+
+      <Link href={`/film/${movie.slug}`} style={{ textDecoration: 'none' }}>
         <div style={{ position: 'relative', aspectRatio: '2/3', overflow: 'hidden' }}>
           <img src={movie.poster_url} alt={movie.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
 
@@ -64,21 +81,7 @@ export default function MovieCard({ movie }: { movie: any }) {
 
           <span style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.75)', color: '#f5a623', fontSize: '11px', fontWeight: 500, padding: '3px 7px', borderRadius: '3px' }}>★ {movie.rating}</span>
 
-          {user && (
-            <div style={{ position: 'absolute', bottom: '8px', right: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <button onClick={toggleFavorites}
-                title={inFavorites ? 'Hiq nga të preferuarat' : 'Shto te të preferuarat'}
-                style={{ width: '30px', height: '30px', borderRadius: '50%', background: inFavorites ? 'rgba(229,9,20,0.9)' : 'rgba(0,0,0,0.7)', border: `1px solid ${inFavorites ? '#e50914' : 'rgba(255,255,255,0.3)'}`, color: '#fff', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {inFavorites ? '❤️' : '🤍'}
-              </button>
-              <button onClick={toggleWatchlist}
-                title={inWatchlist ? 'Hiq nga watchlist' : 'Shto te watchlist'}
-                style={{ width: '30px', height: '30px', borderRadius: '50%', background: inWatchlist ? 'rgba(34,197,94,0.9)' : 'rgba(0,0,0,0.7)', border: `1px solid ${inWatchlist ? '#22c55e' : 'rgba(255,255,255,0.3)'}`, color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
-                {inWatchlist ? '✓' : '+'}
-              </button>
-            </div>
-          )}
-
+          {/* Play overlay */}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)', opacity: 0, transition: 'opacity 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
             onMouseLeave={e => (e.currentTarget.style.opacity = '0')}>
@@ -95,8 +98,8 @@ export default function MovieCard({ movie }: { movie: any }) {
             <span style={{ fontSize: '10px', color: '#6b6b80', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '3px' }}>{movie.genre}</span>
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+    </div>
   )
 }
 
