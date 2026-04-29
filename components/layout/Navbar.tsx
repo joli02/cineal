@@ -43,6 +43,7 @@ export default function Navbar() {
     { href: '/seriale', label: 'Seriale' },
     { href: '/anime', label: 'Anime' },
     { href: '/trending', label: 'Trending' },
+    { href: '/vip', label: '⭐ VIP' },
   ]
 
   const roleBadge: Record<string, string> = {
