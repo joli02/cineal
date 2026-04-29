@@ -10,6 +10,7 @@ export default function Navbar() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
 
@@ -58,96 +59,133 @@ export default function Navbar() {
   ]
 
   return (
-    <nav style={{ background: 'rgba(10,10,15,0.97)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'sticky', top: 0, zIndex: 100, padding: '0 32px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <>
+      <nav style={{ background: 'rgba(10,10,15,0.97)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'sticky', top: 0, zIndex: 100, padding: '0 32px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 
-      <Link href="/" style={{ textDecoration: 'none' }}>
-        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '24px', letterSpacing: '3px', color: '#fff' }}>
-          <span style={{ color: '#e50914' }}>C</span>INEAL
+        <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+          <img src="/logo.svg" alt="Cineal" style={{ height: '32px', width: 'auto' }} />
+        </Link>
+
+        {/* Desktop Links */}
+        <ul className="desktop-nav" style={{ display: 'flex', gap: '28px', listStyle: 'none', margin: 0, padding: 0 }}>
+          {links.map(({ href, label }) => (
+            <li key={href}>
+              <Link href={href} style={{ color: pathname === href ? '#fff' : '#b0b0c0', textDecoration: 'none', fontSize: '13px', fontWeight: pathname === href ? 500 : 400 }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+                onMouseLeave={e => (e.currentTarget.style.color = pathname === href ? '#fff' : '#b0b0c0')}>
+                {label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {searchOpen ? (
+            <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && search) window.location.href = `/filma?kerko=${encodeURIComponent(search)}`; if (e.key === 'Escape') setSearchOpen(false) }}
+              placeholder="Kërko filma..."
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '7px 14px', borderRadius: '4px', fontSize: '13px', outline: 'none', width: '200px' }} />
+          ) : (
+            <button onClick={() => setSearchOpen(true)} style={{ background: 'transparent', border: 'none', color: '#b0b0c0', fontSize: '16px', cursor: 'pointer', padding: '6px' }}>🔍</button>
+          )}
+
+          {user ? (
+            <div style={{ position: 'relative' }}>
+              <div onClick={() => setDropdownOpen(!dropdownOpen)}
+                style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(229,9,20,0.2)', border: '2px solid rgba(229,9,20,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '16px' }}>
+                👤
+              </div>
+
+              {dropdownOpen && (
+                <div style={{ position: 'absolute', right: 0, top: '44px', background: '#12121a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '8px', minWidth: '220px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 999 }}>
+                  <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)', marginBottom: '6px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 500, color: '#fff', marginBottom: '4px' }}>
+                      {profile?.full_name || user.email?.split('@')[0]}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6b6b80', marginBottom: '6px' }}>{user.email}</div>
+                    <span style={{ fontSize: '10px', background: `${roleBadge[profile?.role || 'free']}22`, border: `1px solid ${roleBadge[profile?.role || 'free']}44`, color: roleBadge[profile?.role || 'free'], padding: '2px 8px', borderRadius: '10px', fontWeight: 500 }}>
+                      {(profile?.role || 'FREE').toUpperCase()}
+                    </span>
+                  </div>
+
+                  {menuItems.map(item => (
+                    <Link key={item.href} href={item.href} onClick={() => setDropdownOpen(false)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', borderRadius: '6px', textDecoration: 'none', color: '#b0b0c0', fontSize: '13px' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <span>{item.icon}</span><span>{item.label}</span>
+                    </Link>
+                  ))}
+
+                  {(profile?.role === 'admin' || profile?.role === 'moderator') && (
+                    <Link href="/admin" onClick={() => setDropdownOpen(false)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', borderRadius: '6px', textDecoration: 'none', color: '#e50914', fontSize: '13px' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(229,9,20,0.08)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <span>🎬</span><span>Admin Panel</span>
+                    </Link>
+                  )}
+
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', marginTop: '6px', paddingTop: '6px' }}>
+                    <button onClick={handleLogout}
+                      style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', borderRadius: '6px', background: 'transparent', border: 'none', color: '#ff6b6b', fontSize: '13px', cursor: 'pointer', width: '100%', fontFamily: "'DM Sans', sans-serif" }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,107,107,0.08)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <span>🚪</span><span>Dil</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <Link href="/auth/login">
+                <button style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#b0b0c0', padding: '7px 18px', borderRadius: '4px', fontSize: '13px', cursor: 'pointer' }}>Hyr</button>
+              </Link>
+              <Link href="/auth/register">
+                <button style={{ background: '#e50914', border: 'none', color: '#fff', padding: '7px 18px', borderRadius: '4px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>Regjistrohu</button>
+              </Link>
+            </>
+          )}
+
+          {/* Mobile menu button */}
+          <button className="mobile-menu-btn" onClick={() => setMenuOpen(!menuOpen)}
+            style={{ display: 'none', background: 'transparent', border: 'none', color: '#fff', fontSize: '22px', cursor: 'pointer' }}>
+            {menuOpen ? '✕' : '☰'}
+          </button>
         </div>
-      </Link>
+      </nav>
 
-      <ul style={{ display: 'flex', gap: '28px', listStyle: 'none', margin: 0, padding: 0 }}>
-        {links.map(({ href, label }) => (
-          <li key={href}>
-            <Link href={href} style={{ color: pathname === href ? '#fff' : '#b0b0c0', textDecoration: 'none', fontSize: '13px', fontWeight: pathname === href ? 500 : 400 }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-              onMouseLeave={e => (e.currentTarget.style.color = pathname === href ? '#fff' : '#b0b0c0')}>
+      {/* Mobile Menu */}
+      {menuOpen && (
+        <div style={{ position: 'fixed', top: '60px', left: 0, right: 0, bottom: 0, background: 'rgba(10,10,15,0.98)', zIndex: 99, padding: '20px', overflowY: 'auto' }}>
+          {links.map(({ href, label }) => (
+            <Link key={href} href={href} onClick={() => setMenuOpen(false)}
+              style={{ display: 'block', padding: '14px 0', fontSize: '18px', color: pathname === href ? '#e50914' : '#fff', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
               {label}
             </Link>
-          </li>
-        ))}
-      </ul>
-
-      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-        {searchOpen ? (
-          <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && search) window.location.href = `/filma?kerko=${encodeURIComponent(search)}`; if (e.key === 'Escape') setSearchOpen(false) }}
-            placeholder="Kërko filma..."
-            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '7px 14px', borderRadius: '4px', fontSize: '13px', outline: 'none', width: '200px' }} />
-        ) : (
-          <button onClick={() => setSearchOpen(true)} style={{ background: 'transparent', border: 'none', color: '#b0b0c0', fontSize: '16px', cursor: 'pointer', padding: '6px' }}>🔍</button>
-        )}
-
-        {user ? (
-          <div style={{ position: 'relative' }}>
-            <div onClick={() => setDropdownOpen(!dropdownOpen)}
-              style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(229,9,20,0.2)', border: '2px solid rgba(229,9,20,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '16px' }}>
-              👤
+          ))}
+          {!user && (
+            <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <Link href="/auth/login" onClick={() => setMenuOpen(false)}
+                style={{ display: 'block', padding: '12px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: '#fff', textDecoration: 'none', fontSize: '15px' }}>
+                Hyr
+              </Link>
+              <Link href="/auth/register" onClick={() => setMenuOpen(false)}
+                style={{ display: 'block', padding: '12px', textAlign: 'center', background: '#e50914', borderRadius: '6px', color: '#fff', textDecoration: 'none', fontSize: '15px', fontWeight: 600 }}>
+                Regjistrohu
+              </Link>
             </div>
+          )}
+        </div>
+      )}
 
-            {dropdownOpen && (
-              <div style={{ position: 'absolute', right: 0, top: '44px', background: '#12121a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '8px', minWidth: '220px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 999 }}>
-
-                <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)', marginBottom: '6px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 500, color: '#fff', marginBottom: '4px' }}>
-                    {profile?.full_name || user.email?.split('@')[0]}
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#6b6b80', marginBottom: '6px' }}>{user.email}</div>
-                  <span style={{ fontSize: '10px', background: `${roleBadge[profile?.role || 'free']}22`, border: `1px solid ${roleBadge[profile?.role || 'free']}44`, color: roleBadge[profile?.role || 'free'], padding: '2px 8px', borderRadius: '10px', fontWeight: 500 }}>
-                    {(profile?.role || 'FREE').toUpperCase()}
-                  </span>
-                </div>
-
-                {menuItems.map(item => (
-                  <Link key={item.href} href={item.href} onClick={() => setDropdownOpen(false)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', borderRadius: '6px', textDecoration: 'none', color: '#b0b0c0', fontSize: '13px' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <span>{item.icon}</span><span>{item.label}</span>
-                  </Link>
-                ))}
-
-                {(profile?.role === 'admin' || profile?.role === 'moderator') && (
-                  <Link href="/admin" onClick={() => setDropdownOpen(false)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', borderRadius: '6px', textDecoration: 'none', color: '#e50914', fontSize: '13px' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(229,9,20,0.08)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <span>🎬</span><span>Admin Panel</span>
-                  </Link>
-                )}
-
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', marginTop: '6px', paddingTop: '6px' }}>
-                  <button onClick={handleLogout}
-                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', borderRadius: '6px', background: 'transparent', border: 'none', color: '#ff6b6b', fontSize: '13px', cursor: 'pointer', width: '100%', fontFamily: "'DM Sans', sans-serif" }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,107,107,0.08)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <span>🚪</span><span>Dil</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <>
-            <Link href="/auth/login">
-              <button style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#b0b0c0', padding: '7px 18px', borderRadius: '4px', fontSize: '13px', cursor: 'pointer' }}>Hyr</button>
-            </Link>
-            <Link href="/auth/register">
-              <button style={{ background: '#e50914', border: 'none', color: '#fff', padding: '7px 18px', borderRadius: '4px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>Regjistrohu</button>
-            </Link>
-          </>
-        )}
-      </div>
-    </nav>
+      <style>{`
+        @media (max-width: 768px) {
+          .desktop-nav { display: none !important; }
+          .mobile-menu-btn { display: block !important; }
+        }
+      `}</style>
+    </>
   )
 }
