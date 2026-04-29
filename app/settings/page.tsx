@@ -47,19 +47,18 @@ export default function SettingsPage() {
     setLoading(false)
   }
 
-  const inp = {
+  const inp: React.CSSProperties = {
     width: '100%', background: '#0a0a0f',
     border: '1px solid rgba(255,255,255,0.08)',
     color: '#fff', padding: '11px 14px', borderRadius: '6px',
-    fontSize: '14px', fontFamily: "'DM Sans', sans-serif",
-    outline: 'none', boxSizing: 'border-box' as const
+    fontSize: '14px', outline: 'none', boxSizing: 'border-box'
   }
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
-      <div style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '32px' }}>⚙️ Cilësimet</h1>
+      <div style={{ maxWidth: '600px', margin: '0 auto', padding: 'clamp(24px, 4vw, 40px) clamp(16px, 4vw, 24px)' }}>
+        <h1 style={{ fontSize: 'clamp(20px, 4vw, 24px)', fontWeight: 600, marginBottom: '32px' }}>⚙️ Cilësimet</h1>
 
         {msg && (
           <div style={{ background: msgType === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(229,9,20,0.1)', border: `1px solid ${msgType === 'success' ? 'rgba(34,197,94,0.3)' : 'rgba(229,9,20,0.3)'}`, color: msgType === 'success' ? '#22c55e' : '#ff6b6b', padding: '12px 16px', borderRadius: '8px', fontSize: '13px', marginBottom: '20px' }}>
@@ -68,7 +67,7 @@ export default function SettingsPage() {
         )}
 
         {/* Profili */}
-        <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '24px', marginBottom: '16px' }}>
+        <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: 'clamp(16px, 4vw, 24px)', marginBottom: '16px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '20px', color: '#b0b0c0' }}>👤 Informacioni i Profilit</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
@@ -81,14 +80,14 @@ export default function SettingsPage() {
               <span style={{ fontSize: '11px', color: '#6b6b80', marginTop: '4px', display: 'block' }}>Email-i nuk mund të ndryshohet</span>
             </div>
             <button onClick={handleSaveName} disabled={loading}
-              style={{ background: '#e50914', border: 'none', color: '#fff', padding: '11px 24px', borderRadius: '6px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', alignSelf: 'flex-start' }}>
+              style={{ background: loading ? '#444' : '#e50914', border: 'none', color: '#fff', padding: '11px 24px', borderRadius: '6px', fontSize: '14px', fontWeight: 500, cursor: loading ? 'not-allowed' : 'pointer', alignSelf: 'flex-start', width: '100%' }}>
               {loading ? 'Duke ruajtur...' : 'Ruaj ndryshimet'}
             </button>
           </div>
         </div>
 
         {/* Fjalëkalimi */}
-        <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '24px', marginBottom: '16px' }}>
+        <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: 'clamp(16px, 4vw, 24px)', marginBottom: '16px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '20px', color: '#b0b0c0' }}>🔒 Ndrysho Fjalëkalimin</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
@@ -96,18 +95,18 @@ export default function SettingsPage() {
               <input value={newPassword} onChange={e => setNewPassword(e.target.value)} type="password" placeholder="Minimum 8 karaktere" style={inp} />
             </div>
             <button onClick={handleChangePassword} disabled={loading}
-              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '11px 24px', borderRadius: '6px', fontSize: '14px', cursor: 'pointer', alignSelf: 'flex-start' }}>
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '11px 24px', borderRadius: '6px', fontSize: '14px', cursor: loading ? 'not-allowed' : 'pointer', width: '100%' }}>
               {loading ? 'Duke ndryshuar...' : 'Ndrysho fjalëkalimin'}
             </button>
           </div>
         </div>
 
-        {/* Llogaria */}
-        <div style={{ background: '#12121a', border: '1px solid rgba(255,107,107,0.15)', borderRadius: '10px', padding: '24px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '8px', color: '#ff6b6b' }}>⚠️ Zona e Rrezikshme</h2>
+        {/* Zona e rrezikshme */}
+        <div style={{ background: '#12121a', border: '1px solid rgba(255,107,107,0.15)', borderRadius: '10px', padding: 'clamp(16px, 4vw, 24px)' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '8px', color: '#ff6b6b' }}>⚠️ Dil nga llogaria</h2>
           <p style={{ fontSize: '13px', color: '#6b6b80', marginBottom: '16px' }}>Nëse del nga llogaria, do të duhet të hysh sërish.</p>
           <button onClick={async () => { await supabase.auth.signOut(); router.push('/') }}
-            style={{ background: 'rgba(255,107,107,0.1)', border: '1px solid rgba(255,107,107,0.3)', color: '#ff6b6b', padding: '10px 20px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}>
+            style={{ background: 'rgba(255,107,107,0.1)', border: '1px solid rgba(255,107,107,0.3)', color: '#ff6b6b', padding: '10px 20px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', width: '100%' }}>
             🚪 Dil nga llogaria
           </button>
         </div>
