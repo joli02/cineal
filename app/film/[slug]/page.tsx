@@ -88,26 +88,39 @@ export default function FilmPage() {
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
-      <div style={{ position: 'relative', height: '45vh', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${movie.backdrop_url || movie.poster_url})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(0.3)' }} />
+      {/* Backdrop */}
+      <div style={{ position: 'relative', height: 'clamp(200px, 40vh, 400px)', overflow: 'hidden' }}>
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: `url(${movie.backdrop_url || movie.poster_url})`,
+          backgroundSize: 'cover', backgroundPosition: 'center',
+          filter: 'brightness(0.3)'
+        }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0a0a0f 0%, transparent 60%)' }} />
       </div>
 
-      <div style={{ padding: '0 60px 60px', marginTop: '-100px', position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', gap: '28px', alignItems: 'flex-start' }}>
+      <div style={{ padding: '0 clamp(16px, 4vw, 60px) 60px', marginTop: 'clamp(-60px, -8vw, -100px)', position: 'relative', zIndex: 1 }}>
+
+        {/* Info section */}
+        <div style={{ display: 'flex', gap: 'clamp(16px, 3vw, 28px)', alignItems: 'flex-start', flexWrap: 'wrap' }}>
           {movie.poster_url && (
-            <img src={movie.poster_url} alt={movie.title} style={{ width: '160px', borderRadius: '8px', flexShrink: 0, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }} />
+            <img src={movie.poster_url} alt={movie.title}
+              style={{ width: 'clamp(100px, 15vw, 160px)', borderRadius: '8px', flexShrink: 0, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }} />
           )}
-          <div style={{ flex: 1, paddingTop: '30px' }}>
-            <h1 style={{ fontSize: '34px', fontWeight: 700, marginBottom: '8px' }}>{movie.title_sq || movie.title}</h1>
-            <div style={{ display: 'flex', gap: '12px', fontSize: '13px', color: '#b0b0c0', marginBottom: '12px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '200px', paddingTop: 'clamp(20px, 5vw, 40px)' }}>
+            <h1 style={{ fontSize: 'clamp(20px, 4vw, 34px)', fontWeight: 700, marginBottom: '8px' }}>
+              {movie.title_sq || movie.title}
+            </h1>
+            <div style={{ display: 'flex', gap: '10px', fontSize: '13px', color: '#b0b0c0', marginBottom: '12px', flexWrap: 'wrap' }}>
               {movie.year && <span>{movie.year}</span>}
               {movie.genre && <><span>•</span><span>{movie.genre}</span></>}
               {movie.rating && <><span>•</span><span>⭐ {movie.rating}</span></>}
               {movie.duration && <><span>•</span><span>{movie.duration}</span></>}
             </div>
             {movie.description && (
-              <p style={{ fontSize: '14px', color: '#b0b0c0', lineHeight: 1.7, maxWidth: '580px', marginBottom: '20px' }}>{movie.description}</p>
+              <p style={{ fontSize: '14px', color: '#b0b0c0', lineHeight: 1.7, maxWidth: '580px', marginBottom: '20px' }}>
+                {movie.description}
+              </p>
             )}
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
               <button onClick={toggleWatchlist}
@@ -119,8 +132,9 @@ export default function FilmPage() {
           </div>
         </div>
 
+        {/* Video Player */}
         {videoUrl && (
-          <div style={{ marginTop: '28px', borderRadius: '10px', overflow: 'hidden', background: '#000', maxWidth: '880px', aspectRatio: '16/9', position: 'relative' }}>
+          <div style={{ marginTop: '28px', borderRadius: '10px', overflow: 'hidden', background: '#000', width: '100%', maxWidth: '880px', aspectRatio: '16/9', position: 'relative' }}>
             {isEmbed(videoUrl) ? (
               <iframe
                 src={videoUrl}
@@ -130,15 +144,8 @@ export default function FilmPage() {
                 onLoad={addToHistory}
               />
             ) : (
-              <video
-                controls
-                style={{ width: '100%', height: '100%', display: 'block' }}
-                src={videoUrl}
-                onPlay={addToHistory}
-              >
-                {movie.subtitle_url && (
-                  <track kind="subtitles" src={movie.subtitle_url} srcLang="sq" label="Shqip" default />
-                )}
+              <video controls style={{ width: '100%', height: '100%', display: 'block' }} src={videoUrl} onPlay={addToHistory}>
+                {movie.subtitle_url && <track kind="subtitles" src={movie.subtitle_url} srcLang="sq" label="Shqip" default />}
               </video>
             )}
           </div>
@@ -148,6 +155,7 @@ export default function FilmPage() {
           <Link href="/" style={{ color: '#e50914', textDecoration: 'none', fontSize: '14px' }}>← Kthehu te kryefaqja</Link>
         </div>
       </div>
+
       <Footer />
     </div>
   )
