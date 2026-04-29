@@ -14,6 +14,7 @@ export default function FilmPage() {
   const [user, setUser] = useState<any>(null)
   const [inWatchlist, setInWatchlist] = useState(false)
   const [msg, setMsg] = useState('')
+  const [similar, setSimilar] = useState<any[]>([])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -26,9 +27,21 @@ export default function FilmPage() {
       const { data } = await supabase.from('movies').select('*').eq('slug', slug).single()
       setMovie(data)
       setLoading(false)
+      if (data) fetchSimilar(data.genre, data.id)
     }
     if (slug) fetchMovie()
   }, [slug])
+
+  async function fetchSimilar(genre: string, id: string) {
+    const { data } = await supabase
+      .from('movies')
+      .select('*')
+      .eq('status', 'live')
+      .eq('genre', genre)
+      .neq('id', id)
+      .limit(6)
+    if (data) setSimilar(data)
+  }
 
   useEffect(() => {
     async function checkWatchlist() {
@@ -101,7 +114,7 @@ export default function FilmPage() {
 
       <div style={{ padding: '0 clamp(16px, 4vw, 60px) 60px', marginTop: 'clamp(-60px, -8vw, -100px)', position: 'relative', zIndex: 1 }}>
 
-        {/* Info section */}
+        {/* Info */}
         <div style={{ display: 'flex', gap: 'clamp(16px, 3vw, 28px)', alignItems: 'flex-start', flexWrap: 'wrap' }}>
           {movie.poster_url && (
             <img src={movie.poster_url} alt={movie.title}
@@ -151,9 +164,38 @@ export default function FilmPage() {
           </div>
         )}
 
-        <div style={{ marginTop: '20px' }}>
+        <div style={{ marginTop: '20px', marginBottom: '40px' }}>
           <Link href="/" style={{ color: '#e50914', textDecoration: 'none', fontSize: '14px' }}>← Kthehu te kryefaqja</Link>
         </div>
+
+        {/* Filma të Ngjashëm */}
+        {similar.length > 0 && (
+          <div>
+            <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600, marginBottom: '16px' }}>
+              🎬 Filma të Ngjashëm — {movie.genre}
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px' }}>
+              {similar.map((m: any) => (
+                <Link key={m.id} href={`/film/${m.slug}`} style={{ textDecoration: 'none' }}>
+                  <div style={{ borderRadius: '8px', overflow: 'hidden', background: '#12121a', cursor: 'pointer' }}>
+                    {m.poster_url ? (
+                      <img src={m.poster_url} alt={m.title} style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', display: 'block' }} />
+                    ) : (
+                      <div style={{ width: '100%', aspectRatio: '2/3', background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>🎬</div>
+                    )}
+                    <div style={{ padding: '8px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 500, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title}</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                        <span style={{ fontSize: '11px', color: '#6b6b80' }}>{m.year}</span>
+                        {m.rating && <span style={{ fontSize: '11px', color: '#f5a623' }}>⭐ {m.rating}</span>}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <Footer />
