@@ -65,10 +65,13 @@ export default function VipPage() {
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
-      <div style={{ textAlign: 'center', padding: '60px 20px 40px' }}>
+      {/* Hero */}
+      <div style={{ textAlign: 'center', padding: 'clamp(40px, 8vw, 60px) clamp(16px, 4vw, 20px) 40px' }}>
         <div style={{ fontSize: '12px', color: '#e50914', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '12px' }}>⭐ Cineal VIP</div>
-        <h1 style={{ fontSize: '42px', fontWeight: 700, marginBottom: '12px', lineHeight: 1.1 }}>Shiko pa kufizime</h1>
-        <p style={{ fontSize: '16px', color: '#b0b0c0', maxWidth: '500px', margin: '0 auto' }}>
+        <h1 style={{ fontSize: 'clamp(28px, 6vw, 42px)', fontWeight: 700, marginBottom: '12px', lineHeight: 1.1 }}>
+          Shiko pa kufizime
+        </h1>
+        <p style={{ fontSize: 'clamp(14px, 3vw, 16px)', color: '#b0b0c0', maxWidth: '500px', margin: '0 auto' }}>
           Aktivizo VIP dhe shiko të gjitha filmat pa reklama, në cilësi HD me titra shqip.
         </p>
         {profile?.role === 'vip' && (
@@ -78,12 +81,13 @@ export default function VipPage() {
         )}
       </div>
 
+      {/* Plans */}
       {!showPayment && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', maxWidth: '900px', margin: '0 auto', padding: '0 24px 60px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', maxWidth: '960px', margin: '0 auto', padding: '0 clamp(16px, 4vw, 24px) 60px' }}>
           {PLANS.map(plan => (
             <div key={plan.id} style={{ position: 'relative', background: '#12121a', border: `1px solid ${plan.popular ? 'rgba(229,9,20,0.4)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '12px', padding: '28px', display: 'flex', flexDirection: 'column' }}>
               {plan.popular && (
-                <div style={{ position: 'absolute', top: '-1px', left: '50%', transform: 'translateX(-50%)', background: '#e50914', color: '#fff', fontSize: '10px', fontWeight: 600, padding: '3px 14px', borderRadius: '0 0 8px 8px', letterSpacing: '1px' }}>
+                <div style={{ position: 'absolute', top: '-1px', left: '50%', transform: 'translateX(-50%)', background: '#e50914', color: '#fff', fontSize: '10px', fontWeight: 600, padding: '3px 14px', borderRadius: '0 0 8px 8px', letterSpacing: '1px', whiteSpace: 'nowrap' }}>
                   MË I POPULLARIT
                 </div>
               )}
@@ -116,9 +120,10 @@ export default function VipPage() {
         </div>
       )}
 
+      {/* Payment */}
       {showPayment && selectedPlan && (
-        <div style={{ maxWidth: '500px', margin: '0 auto', padding: '0 24px 60px' }}>
-          <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '32px' }}>
+        <div style={{ maxWidth: '500px', margin: '0 auto', padding: '0 clamp(16px, 4vw, 24px) 60px' }}>
+          <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: 'clamp(20px, 4vw, 32px)' }}>
             <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '8px' }}>💳 Pagesa me PayPal</h2>
             <p style={{ fontSize: '13px', color: '#6b6b80', marginBottom: '24px' }}>
               Plani: <strong style={{ color: '#fff' }}>{selectedPlan.name}</strong> — {selectedPlan.price} {selectedPlan.currency}
@@ -150,10 +155,11 @@ export default function VipPage() {
         </div>
       )}
 
-      <div style={{ background: '#12121a', borderTop: '1px solid rgba(255,255,255,0.07)', padding: '60px 24px' }}>
+      {/* Features */}
+      <div style={{ background: '#12121a', borderTop: '1px solid rgba(255,255,255,0.07)', padding: 'clamp(40px, 8vw, 60px) clamp(16px, 4vw, 24px)' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '28px', fontWeight: 600, marginBottom: '40px' }}>Pse VIP?</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+          <h2 style={{ fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: 600, marginBottom: '40px' }}>Pse VIP?</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
             {[
               { icon: '🚫', title: 'Pa Reklama', desc: 'Shiko filmat pa asnjë ndërprerje' },
               { icon: '🎬', title: 'HD 1080p', desc: 'Cilësi e lartë për çdo film' },
