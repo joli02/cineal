@@ -118,7 +118,6 @@ export default function FilmPage() {
               controls
               style={{ width: '100%', display: 'block' }}
               src={movie.video_url || movie.embed_url}
-              crossOrigin="anonymous"
               onPlay={addToHistory}
             >
               {movie.subtitle_url && (
