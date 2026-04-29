@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { supabase } from '@/lib/supabase'
@@ -121,7 +121,13 @@ export default function FilmPage() {
               onPlay={addToHistory}
             >
               {movie.subtitle_url && (
-                <track kind="subtitles" src={movie.subtitle_url} srcLang="sq" label="Shqip" default />
+                <track
+                  kind="subtitles"
+                  src={movie.subtitle_url}
+                  srcLang="sq"
+                  label="Shqip"
+                  default
+                />
               )}
             </video>
           </div>
