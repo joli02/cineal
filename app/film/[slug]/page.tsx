@@ -61,6 +61,11 @@ export default function FilmPage() {
     )
   }
 
+  const isEmbed = (url: string) =>
+    url?.includes('iframe.mediadelivery.net') ||
+    url?.includes('youtube.com/embed') ||
+    url?.includes('player.mediadelivery.net')
+
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b6b80' }}>
       Duke ngarkuar...
@@ -76,6 +81,8 @@ export default function FilmPage() {
       </div>
     </div>
   )
+
+  const videoUrl = movie.video_url || movie.embed_url
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
@@ -112,24 +119,28 @@ export default function FilmPage() {
           </div>
         </div>
 
-        {(movie.video_url || movie.embed_url) && (
-          <div style={{ marginTop: '28px', borderRadius: '10px', overflow: 'hidden', background: '#000', maxWidth: '880px' }}>
-            <video
-              controls
-              style={{ width: '100%', display: 'block' }}
-              src={movie.video_url || movie.embed_url}
-              onPlay={addToHistory}
-            >
-              {movie.subtitle_url && (
-                <track
-                  kind="subtitles"
-                  src={movie.subtitle_url}
-                  srcLang="sq"
-                  label="Shqip"
-                  default
-                />
-              )}
-            </video>
+        {videoUrl && (
+          <div style={{ marginTop: '28px', borderRadius: '10px', overflow: 'hidden', background: '#000', maxWidth: '880px', aspectRatio: '16/9', position: 'relative' }}>
+            {isEmbed(videoUrl) ? (
+              <iframe
+                src={videoUrl}
+                style={{ width: '100%', height: '100%', border: 'none', position: 'absolute', inset: 0 }}
+                allowFullScreen
+                allow="autoplay; fullscreen; picture-in-picture"
+                onLoad={addToHistory}
+              />
+            ) : (
+              <video
+                controls
+                style={{ width: '100%', height: '100%', display: 'block' }}
+                src={videoUrl}
+                onPlay={addToHistory}
+              >
+                {movie.subtitle_url && (
+                  <track kind="subtitles" src={movie.subtitle_url} srcLang="sq" label="Shqip" default />
+                )}
+              </video>
+            )}
           </div>
         )}
 
