@@ -6,6 +6,8 @@ import MovieCard, { TrendingCard } from '@/components/movie/MovieCard'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
+const GENRES = ['Aksion', 'Drama', 'Sci-Fi', 'Thriller', 'Horror', 'Comedy', 'Anime', 'Romance', 'Dokumentar', 'Seriale']
+
 export default function HomePage() {
   const [movies, setMovies] = useState<any[]>([])
   const [trending, setTrending] = useState<any[]>([])
@@ -19,7 +21,7 @@ export default function HomePage() {
           .select('*')
           .eq('status', 'live')
           .order('created_at', { ascending: false })
-          .limit(24)
+          .limit(100)
         if (data) {
           setMovies(data)
           const tr = data.filter((m: any) => m.is_trending)
@@ -34,6 +36,11 @@ export default function HomePage() {
   }, [])
 
   const featured = movies[0]
+
+  const moviesByGenre = GENRES.map(genre => ({
+    genre,
+    movies: movies.filter(m => m.genre === genre)
+  })).filter(g => g.movies.length > 0)
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
@@ -66,7 +73,7 @@ export default function HomePage() {
               {featured.duration && <><span>•</span><span>{featured.duration}</span></>}
             </div>
             {featured.description && (
-              <p style={{ fontSize: '14px', color: '#b0b0c0', lineHeight: 1.6, marginBottom: '24px', maxWidth: '500px', display: 'webkitBox' as any }}>
+              <p style={{ fontSize: '14px', color: '#b0b0c0', lineHeight: 1.6, marginBottom: '24px', maxWidth: '500px' }}>
                 {featured.description}
               </p>
             )}
@@ -112,7 +119,7 @@ export default function HomePage() {
               <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>🔥 TRENDING</h2>
               <Link href="/trending" style={{ fontSize: '13px', color: '#e50914', textDecoration: 'none' }}>Shiko të gjitha →</Link>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
               {trending.map((m: any, i: number) => (
                 <TrendingCard key={m.id} movie={m} index={i} />
               ))}
@@ -124,10 +131,10 @@ export default function HomePage() {
         {movies.length > 0 && (
           <div style={{ marginBottom: '40px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>🎬 Filmat</h2>
+              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>🎬 Të Gjitha Filmat</h2>
               <Link href="/filma" style={{ fontSize: '13px', color: '#e50914', textDecoration: 'none' }}>Shiko të gjitha →</Link>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px', marginBottom: '40px' }}>
               {movies.map((m: any) => (
                 <MovieCard key={m.id} movie={m} />
               ))}
@@ -135,15 +142,39 @@ export default function HomePage() {
           </div>
         )}
 
+        {/* SIPAS ZHANRIT */}
+        {moviesByGenre.map(({ genre, movies: gMovies }) => (
+          <div key={genre} style={{ marginBottom: '40px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>
+                {genre === 'Aksion' && '💥'}
+                {genre === 'Drama' && '🎭'}
+                {genre === 'Sci-Fi' && '🚀'}
+                {genre === 'Thriller' && '😱'}
+                {genre === 'Horror' && '👻'}
+                {genre === 'Comedy' && '😂'}
+                {genre === 'Anime' && '⛩️'}
+                {genre === 'Romance' && '💕'}
+                {genre === 'Dokumentar' && '📽️'}
+                {genre === 'Seriale' && '📺'}
+                {' '}{genre}
+              </h2>
+              <Link href={genre === 'Anime' ? '/anime' : genre === 'Seriale' ? '/seriale' : `/filma`}
+                style={{ fontSize: '13px', color: '#e50914', textDecoration: 'none' }}>
+                Shiko të gjitha →
+              </Link>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
+              {gMovies.map((m: any) => (
+                <MovieCard key={m.id} movie={m} />
+              ))}
+            </div>
+          </div>
+        ))}
+
       </div>
 
       <Footer />
-
-      <style>{`
-        @media (max-width: 768px) {
-          .hero-text { font-size: 24px !important; }
-        }
-      `}</style>
     </div>
   )
 }
