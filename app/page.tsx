@@ -39,8 +39,9 @@ export default function HomePage() {
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
+      {/* HERO */}
       {featured && (
-        <div style={{ position: 'relative', height: '70vh', minHeight: '500px', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', height: 'clamp(300px, 60vh, 600px)', overflow: 'hidden' }}>
           <div style={{
             position: 'absolute', inset: 0,
             backgroundImage: `url(${featured.backdrop_url || featured.poster_url})`,
@@ -51,35 +52,33 @@ export default function HomePage() {
             position: 'absolute', inset: 0,
             background: 'linear-gradient(to right, rgba(10,10,15,0.95) 40%, transparent 100%)'
           }} />
-          <div style={{ position: 'relative', zIndex: 1, padding: '120px 60px 60px', maxWidth: '600px' }}>
+          <div style={{ position: 'relative', zIndex: 1, padding: 'clamp(60px, 10vw, 120px) clamp(20px, 5vw, 60px) 40px', maxWidth: '600px' }}>
             <div style={{ fontSize: '11px', color: '#e50914', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>
               🔥 Film i Ri
             </div>
-            <h1 style={{ fontSize: '42px', fontWeight: 700, lineHeight: 1.1, marginBottom: '12px' }}>
+            <h1 style={{ fontSize: 'clamp(24px, 5vw, 42px)', fontWeight: 700, lineHeight: 1.1, marginBottom: '12px' }}>
               {featured.title_sq || featured.title}
             </h1>
-            <div style={{ display: 'flex', gap: '12px', fontSize: '13px', color: '#b0b0c0', marginBottom: '16px' }}>
-              <span>{featured.year}</span>
-              <span>•</span>
-              <span>{featured.genre}</span>
-              <span>•</span>
-              <span>⭐ {featured.rating}</span>
+            <div style={{ display: 'flex', gap: '12px', fontSize: '13px', color: '#b0b0c0', marginBottom: '16px', flexWrap: 'wrap' }}>
+              {featured.year && <span>{featured.year}</span>}
+              {featured.genre && <><span>•</span><span>{featured.genre}</span></>}
+              {featured.rating && <><span>•</span><span>⭐ {featured.rating}</span></>}
               {featured.duration && <><span>•</span><span>{featured.duration}</span></>}
             </div>
             {featured.description && (
-              <p style={{ fontSize: '14px', color: '#b0b0c0', lineHeight: 1.6, marginBottom: '24px', maxWidth: '500px' }}>
+              <p style={{ fontSize: '14px', color: '#b0b0c0', lineHeight: 1.6, marginBottom: '24px', maxWidth: '500px', display: 'webkitBox' as any }}>
                 {featured.description}
               </p>
             )}
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <Link href={`/film/${featured.slug}`} style={{
-                background: '#e50914', color: '#fff', padding: '12px 28px',
+                background: '#e50914', color: '#fff', padding: '10px 24px',
                 borderRadius: '5px', textDecoration: 'none', fontWeight: 600, fontSize: '14px'
               }}>
                 ▶ Shiko Tani
               </Link>
               <Link href={`/film/${featured.slug}`} style={{
-                background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '12px 28px',
+                background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '10px 24px',
                 borderRadius: '5px', textDecoration: 'none', fontWeight: 500, fontSize: '14px',
                 border: '1px solid rgba(255,255,255,0.15)'
               }}>
@@ -90,7 +89,7 @@ export default function HomePage() {
         </div>
       )}
 
-      <div style={{ padding: '40px 60px' }}>
+      <div style={{ padding: 'clamp(20px, 4vw, 40px) clamp(16px, 4vw, 60px)' }}>
 
         {loading && (
           <div style={{ textAlign: 'center', padding: '60px', color: '#6b6b80' }}>
@@ -106,13 +105,14 @@ export default function HomePage() {
           </div>
         )}
 
+        {/* TRENDING */}
         {trending.length > 0 && (
           <div style={{ marginBottom: '40px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 600 }}>🔥 TRENDING</h2>
+              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>🔥 TRENDING</h2>
               <Link href="/trending" style={{ fontSize: '13px', color: '#e50914', textDecoration: 'none' }}>Shiko të gjitha →</Link>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
               {trending.map((m: any, i: number) => (
                 <TrendingCard key={m.id} movie={m} index={i} />
               ))}
@@ -120,13 +120,14 @@ export default function HomePage() {
           </div>
         )}
 
+        {/* TË GJITHA FILMAT */}
         {movies.length > 0 && (
           <div style={{ marginBottom: '40px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 600 }}>🎬 Filmat</h2>
+              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>🎬 Filmat</h2>
               <Link href="/filma" style={{ fontSize: '13px', color: '#e50914', textDecoration: 'none' }}>Shiko të gjitha →</Link>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
               {movies.map((m: any) => (
                 <MovieCard key={m.id} movie={m} />
               ))}
@@ -137,6 +138,12 @@ export default function HomePage() {
       </div>
 
       <Footer />
+
+      <style>{`
+        @media (max-width: 768px) {
+          .hero-text { font-size: 24px !important; }
+        }
+      `}</style>
     </div>
   )
 }
