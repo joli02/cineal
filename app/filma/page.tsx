@@ -41,51 +41,52 @@ export default function FilmaPage() {
     <div style={{ background: '#0a0a0f', minHeight: '100vh', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
-      <div style={{ padding: '32px 32px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '32px', letterSpacing: '3px' }}>Të Gjithë Filmat</h1>
-          <p style={{ fontSize: '13px', color: '#6b6b80', marginTop: '4px' }}>{filtered.length} filma me titra shqip</p>
+      <div style={{ padding: 'clamp(16px, 4vw, 32px)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(24px, 5vw, 32px)', letterSpacing: '3px', marginBottom: '4px' }}>Të Gjithë Filmat</h1>
+            <p style={{ fontSize: '13px', color: '#6b6b80' }}>{filtered.length} filma</p>
+          </div>
+          <select value={sort} onChange={e => setSort(e.target.value)}
+            style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.08)', color: '#b0b0c0', padding: '8px 14px', borderRadius: '5px', fontSize: '12px', outline: 'none', cursor: 'pointer' }}>
+            <option>Më të rinjtë</option>
+            <option>Më të vlerësuarit</option>
+            <option>Sipas titullit A-Z</option>
+            <option>Sipas vitit</option>
+          </select>
         </div>
-        <select value={sort} onChange={e => setSort(e.target.value)}
-          style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.08)', color: '#b0b0c0', padding: '8px 14px', borderRadius: '5px', fontSize: '12px', outline: 'none', cursor: 'pointer' }}>
-          <option>Më të rinjtë</option>
-          <option>Më të vlerësuarit</option>
-          <option>Sipas titullit A-Z</option>
-          <option>Sipas vitit</option>
-        </select>
-      </div>
 
-      <div style={{ padding: '16px 32px 0' }}>
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', marginBottom: '14px' }}>
           <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#6b6b80' }}>🔍</span>
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Kërko filma..."
-            style={{ width: '100%', background: '#12121a', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', padding: '12px 16px 12px 44px', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const }} />
+            style={{ width: '100%', background: '#12121a', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', padding: '10px 16px 10px 44px', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const }} />
         </div>
-      </div>
 
-      <div style={{ padding: '14px 32px 0', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-        {GENRES.map(g => (
-          <button key={g} onClick={() => setGenre(g)}
-            style={{ background: genre === g ? '#e50914' : 'rgba(255,255,255,0.05)', border: genre === g ? '1px solid #e50914' : '1px solid rgba(255,255,255,0.08)', color: genre === g ? '#fff' : '#b0b0c0', padding: '7px 16px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer' }}>
-            {g}
-          </button>
-        ))}
-      </div>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+          {GENRES.map(g => (
+            <button key={g} onClick={() => setGenre(g)}
+              style={{ background: genre === g ? '#e50914' : 'rgba(255,255,255,0.05)', border: genre === g ? '1px solid #e50914' : '1px solid rgba(255,255,255,0.08)', color: genre === g ? '#fff' : '#b0b0c0', padding: '6px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer' }}>
+              {g}
+            </button>
+          ))}
+        </div>
 
-      <div style={{ padding: '12px 32px 0', fontSize: '13px', color: '#6b6b80' }}>
-        Gjetur: <span style={{ color: '#b0b0c0' }}>{filtered.length}</span> filma
-      </div>
+        <div style={{ fontSize: '13px', color: '#6b6b80', marginBottom: '14px' }}>
+          Gjetur: <span style={{ color: '#b0b0c0' }}>{filtered.length}</span> filma
+        </div>
 
-      <div style={{ padding: '16px 32px 40px', display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '14px' }}>
-        {loading && <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '60px', color: '#6b6b80' }}>Duke ngarkuar...</div>}
-        {!loading && filtered.map(m => <MovieCard key={m.id} movie={m} />)}
-        {!loading && filtered.length === 0 && (
-          <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '60px', color: '#6b6b80' }}>
-            <div style={{ fontSize: '32px', marginBottom: '12px' }}>🎬</div>
-            <div>Nuk u gjet asnjë film{search ? ` për "${search}"` : ''}</div>
-          </div>
-        )}
+        {loading && <div style={{ textAlign: 'center', padding: '60px', color: '#6b6b80' }}>Duke ngarkuar...</div>}
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px', paddingBottom: '40px' }}>
+          {!loading && filtered.map(m => <MovieCard key={m.id} movie={m} />)}
+          {!loading && filtered.length === 0 && (
+            <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '60px', color: '#6b6b80' }}>
+              <div style={{ fontSize: '32px', marginBottom: '12px' }}>🎬</div>
+              <div>Nuk u gjet asnjë film{search ? ` për "${search}"` : ''}</div>
+            </div>
+          )}
+        </div>
       </div>
 
       <Footer />
