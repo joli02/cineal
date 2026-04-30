@@ -5,6 +5,7 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import CinealIntro from '@/components/CinealIntro'
 
 export default function FilmPage() {
   const params = useParams()
@@ -15,6 +16,7 @@ export default function FilmPage() {
   const [inWatchlist, setInWatchlist] = useState(false)
   const [msg, setMsg] = useState('')
   const [similar, setSimilar] = useState<any[]>([])
+  const [showIntro, setShowIntro] = useState(true)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -78,6 +80,8 @@ export default function FilmPage() {
     url?.includes('iframe.mediadelivery.net') ||
     url?.includes('youtube.com/embed') ||
     url?.includes('player.mediadelivery.net')
+
+  if (showIntro) return <CinealIntro onComplete={() => setShowIntro(false)} />
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b6b80' }}>
