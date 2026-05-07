@@ -16,7 +16,8 @@ export default function FilmPage() {
   const [inWatchlist, setInWatchlist] = useState(false)
   const [msg, setMsg] = useState('')
   const [similar, setSimilar] = useState<any[]>([])
-  const [showIntro, setShowIntro] = useState(true)
+  const [showIntro, setShowIntro] = useState(false)  // ← NDRYSHUAR: false, jo true
+  const [playing, setPlaying] = useState(false)       // ← SHTUAR: kontrollon playerin
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -76,12 +77,25 @@ export default function FilmPage() {
     )
   }
 
+  // ← SHTUAR: Klikimi i butonit Shiko Tani
+  const handlePlay = () => {
+    setShowIntro(true)
+  }
+
+  // ← SHTUAR: Pas intro, hap playerin
+  const handleIntroComplete = () => {
+    setShowIntro(false)
+    setPlaying(true)
+    addToHistory()
+  }
+
   const isEmbed = (url: string) =>
     url?.includes('iframe.mediadelivery.net') ||
     url?.includes('youtube.com/embed') ||
     url?.includes('player.mediadelivery.net')
 
-  if (showIntro) return <CinealIntro onComplete={() => setShowIntro(false)} />
+  // ← NDRYSHUAR: Intro shfaqet vetëm pas klikimit të play
+  if (showIntro) return <CinealIntro onComplete={handleIntroComplete} />
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b6b80' }}>
@@ -139,7 +153,23 @@ export default function FilmPage() {
                 {movie.description}
               </p>
             )}
+
+            {/* ← NDRYSHUAR: Butonat */}
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              {/* Butoni Shiko Tani — tani e aktivizon intro */}
+              {videoUrl && (
+                <button
+                  onClick={handlePlay}
+                  style={{
+                    background: '#e50914', color: '#fff', border: 'none',
+                    padding: '11px 26px', borderRadius: '6px', fontSize: '14px',
+                    fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+                    display: 'flex', alignItems: 'center', gap: '8px'
+                  }}
+                >
+                  ▶ Shiko Tani
+                </button>
+              )}
               <button onClick={toggleWatchlist}
                 style={{ background: inWatchlist ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${inWatchlist ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.2)'}`, color: inWatchlist ? '#22c55e' : '#fff', padding: '10px 20px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>
                 {inWatchlist ? '✓ Në Watchlist' : '+ Watchlist'}
@@ -149,8 +179,8 @@ export default function FilmPage() {
           </div>
         </div>
 
-        {/* Video Player */}
-        {videoUrl && (
+        {/* ← NDRYSHUAR: Player shfaqet vetëm pas intro (playing === true) */}
+        {videoUrl && playing && (
           <div style={{ marginTop: '28px', borderRadius: '10px', overflow: 'hidden', background: '#000', width: '100%', maxWidth: '880px', aspectRatio: '16/9', position: 'relative' }}>
             {isEmbed(videoUrl) ? (
               <iframe
@@ -158,10 +188,9 @@ export default function FilmPage() {
                 style={{ width: '100%', height: '100%', border: 'none', position: 'absolute', inset: 0 }}
                 allowFullScreen
                 allow="autoplay; fullscreen; picture-in-picture"
-                onLoad={addToHistory}
               />
             ) : (
-              <video controls style={{ width: '100%', height: '100%', display: 'block' }} src={videoUrl} onPlay={addToHistory}>
+              <video controls style={{ width: '100%', height: '100%', display: 'block' }} src={videoUrl}>
                 {movie.subtitle_url && <track kind="subtitles" src={movie.subtitle_url} srcLang="sq" label="Shqip" default />}
               </video>
             )}
@@ -176,7 +205,7 @@ export default function FilmPage() {
         {similar.length > 0 && (
           <div>
             <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600, marginBottom: '16px' }}>
-              🎬 Filma të Ngjashëm — {movie.genre}
+              Filma të Ngjashëm — {movie.genre}
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px' }}>
               {similar.map((m: any) => (
