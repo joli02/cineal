@@ -78,7 +78,8 @@ export default function HomePage() {
               </p>
             )}
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <Link href={`/film/${featured.slug}`} style={{
+              {/* ← NDRYSHUAR: shton ?play=true */}
+              <Link href={`/film/${featured.slug}?play=true`} style={{
                 background: '#e50914', color: '#fff', padding: '10px 24px',
                 borderRadius: '5px', textDecoration: 'none', fontWeight: 600, fontSize: '14px'
               }}>
