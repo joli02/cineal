@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation'
 
 const NAV = [
   { id: 'dashboard', icon: '⊞', label: 'Dashboard' },
-  { id: 'add', icon: '＋', label: 'Shto Film' },
-  { id: 'movies', icon: '🎬', label: 'Filmat' },
-  { id: 'users', icon: '👥', label: 'Userat' },
+  { id: 'add', icon: '+', label: 'Shto Film' },
+  { id: 'movies', icon: '▶', label: 'Filmat' },
+  { id: 'users', icon: '◉', label: 'Userat' },
   { id: 'settings', icon: '⚙', label: 'Cilësimet' },
 ]
 
@@ -18,10 +18,8 @@ export default function AdminPage() {
   const [toastErr, setToastErr] = useState(false)
   const router = useRouter()
 
-  // Stats
-  const [stats, setStats] = useState({ movies: 0, users: 0, views: 0 })
+  const [stats, setStats] = useState({ movies: 0, users: 0, views: 0, vipUsers: 0 })
 
-  // Add movie form
   const [title, setTitle] = useState('')
   const [titleSq, setTitleSq] = useState('')
   const [year, setYear] = useState('')
@@ -36,13 +34,16 @@ export default function AdminPage() {
   const [isTrending, setIsTrending] = useState(false)
   const [isFeatured, setIsFeatured] = useState(false)
 
-  // Movies list
   const [movies, setMovies] = useState<any[]>([])
+  const [movieSearch, setMovieSearch] = useState('')
   const [editMovie, setEditMovie] = useState<any>(null)
 
-  // Users list
   const [users, setUsers] = useState<any[]>([])
-  const [vipDays, setVipDays] = useState<Record<string, string>>({})
+  const [userSearch, setUserSearch] = useState('')
+
+  const [maintenance, setMaintenance] = useState(false)
+  const [siteTitle, setSiteTitle] = useState('Cineal — Filma me Titra Shqip')
+  const [contactEmail, setContactEmail] = useState('info@cineal.stream')
 
   useEffect(() => {
     fetchStats()
@@ -56,7 +57,8 @@ export default function AdminPage() {
     const { count: uc } = await supabase.from('profiles').select('*', { count: 'exact', head: true })
     const { data: vd } = await supabase.from('movies').select('views')
     const totalViews = vd?.reduce((s, m) => s + (m.views || 0), 0) || 0
-    setStats({ movies: mc || 0, users: uc || 0, views: totalViews })
+    const { data: vipData } = await supabase.from('profiles').select('id').eq('role', 'vip')
+    setStats({ movies: mc || 0, users: uc || 0, views: totalViews, vipUsers: vipData?.length || 0 })
   }
 
   async function fetchMovies() {
@@ -98,16 +100,16 @@ export default function AdminPage() {
         is_featured: isFeatured, status: 'live', views: 0,
       })
       if (error) throw error
-      showToast(`"${title}" u shtua! ✓`)
+      showToast(`"${title}" u shtua!`)
       resetForm(); fetchStats()
     } catch (e: any) { showToast(e.message, true) }
     setLoading(false)
   }
 
-  const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Fshi "${title}"?`)) return
+  const handleDelete = async (id: string, t: string) => {
+    if (!confirm(`Fshi "${t}"?`)) return
     await supabase.from('movies').delete().eq('id', id)
-    showToast(`"${title}" u fshi!`)
+    showToast(`"${t}" u fshi!`)
     fetchMovies(); fetchStats()
   }
 
@@ -125,7 +127,7 @@ export default function AdminPage() {
         status: editMovie.status,
       }).eq('id', editMovie.id)
       if (error) throw error
-      showToast('Film u përditësua! ✓')
+      showToast('Film u përditësua!')
       setEditMovie(null); fetchMovies()
     } catch (e: any) { showToast(e.message, true) }
     setLoading(false)
@@ -134,17 +136,15 @@ export default function AdminPage() {
   const handleSetVip = async (userId: string, days: number) => {
     const expires = new Date()
     expires.setDate(expires.getDate() + days)
-    await supabase.from('profiles').update({
-      role: 'vip', vip_expires_at: expires.toISOString()
-    }).eq('id', userId)
-    showToast(`VIP aktivizuar për ${days} ditë! ✓`)
-    fetchUsers()
+    await supabase.from('profiles').update({ role: 'vip', vip_expires_at: expires.toISOString() }).eq('id', userId)
+    showToast(`VIP aktivizuar për ${days} ditë!`)
+    fetchUsers(); fetchStats()
   }
 
   const handleRemoveVip = async (userId: string) => {
     await supabase.from('profiles').update({ role: 'free', vip_expires_at: null }).eq('id', userId)
     showToast('VIP u hoq!')
-    fetchUsers()
+    fetchUsers(); fetchStats()
   }
 
   const handleBlock = async (userId: string, status: string) => {
@@ -154,10 +154,35 @@ export default function AdminPage() {
     fetchUsers()
   }
 
+  const filteredMovies = movies.filter(m =>
+    m.title?.toLowerCase().includes(movieSearch.toLowerCase()) ||
+    m.genre?.toLowerCase().includes(movieSearch.toLowerCase()) ||
+    String(m.year || '').includes(movieSearch)
+  )
+
+  const filteredUsers = users.filter(u =>
+    u.email?.toLowerCase().includes(userSearch.toLowerCase()) ||
+    (u.role || '').toLowerCase().includes(userSearch.toLowerCase())
+  )
+
+  const getRoleLabel = (u: any) => {
+    if (u.role === 'admin') return 'ADMIN'
+    if (u.role === 'vip') return 'VIP'
+    return 'FREE'
+  }
+
+  const getRoleStyle = (u: any) => {
+    const r = getRoleLabel(u)
+    if (r === 'ADMIN') return { background: 'rgba(229,9,20,0.12)', color: '#e50914' }
+    if (r === 'VIP') return { background: 'rgba(245,166,35,0.12)', color: '#f5a623' }
+    return { background: 'rgba(255,255,255,0.05)', color: '#6b6b80' }
+  }
+
   const inp: React.CSSProperties = {
     background: '#0a0a0f', border: '1px solid rgba(255,255,255,0.08)',
     color: '#fff', padding: '10px 14px', borderRadius: '5px',
-    fontSize: '13px', outline: 'none', width: '100%', boxSizing: 'border-box'
+    fontSize: '13px', outline: 'none', width: '100%', boxSizing: 'border-box',
+    fontFamily: "'DM Sans', sans-serif",
   }
 
   const s = (id: string) => ({
@@ -181,7 +206,8 @@ export default function AdminPage() {
           {NAV.map(item => (
             <div key={item.id} onClick={() => setActive(item.id)}
               style={{ ...s(item.id), display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 20px', fontSize: '13px', cursor: 'pointer' }}>
-              <span>{item.icon}</span><span>{item.label}</span>
+              <span style={{ opacity: 0.6, fontSize: '13px' }}>{item.icon}</span>
+              <span>{item.label}</span>
             </div>
           ))}
         </div>
@@ -193,10 +219,11 @@ export default function AdminPage() {
       {/* MAIN */}
       <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div style={{ padding: '14px 28px', borderBottom: '1px solid rgba(255,255,255,0.07)', background: '#12121a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: '15px', fontWeight: 500 }}>
-            {NAV.find(n => n.id === active)?.label}
-          </div>
-          <button onClick={() => setActive('add')} style={{ background: '#e50914', border: 'none', color: '#fff', padding: '8px 16px', borderRadius: '5px', fontSize: '12px', cursor: 'pointer', fontWeight: 500 }}>+ Shto Film</button>
+          <div style={{ fontSize: '15px', fontWeight: 500 }}>{NAV.find(n => n.id === active)?.label}</div>
+          <button onClick={() => setActive('add')}
+            style={{ background: '#e50914', border: 'none', color: '#fff', padding: '8px 16px', borderRadius: '5px', fontSize: '12px', cursor: 'pointer', fontWeight: 500 }}>
+            + Shto Film
+          </button>
         </div>
 
         <div style={{ padding: '24px 28px', overflowY: 'auto', flex: 1 }}>
@@ -204,26 +231,25 @@ export default function AdminPage() {
           {/* DASHBOARD */}
           {active === 'dashboard' && (
             <div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px', marginBottom: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '24px' }}>
                 {[
-                  { label: 'Filma Gjithsej', value: stats.movies, icon: '🎬', color: '#3b82f6' },
-                  { label: 'Userat', value: stats.users, icon: '👥', color: '#22c55e' },
-                  { label: 'Shikime Totale', value: stats.views, icon: '👁', color: '#f5a623' },
+                  { label: 'Filma Gjithsej', value: stats.movies, color: '#3b82f6' },
+                  { label: 'Userat', value: stats.users, color: '#22c55e' },
+                  { label: 'Shikime Totale', value: stats.views, color: '#f5a623' },
+                  { label: 'Userat VIP', value: stats.vipUsers, color: '#e50914' },
                 ].map((sc, i) => (
-                  <div key={i} style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '20px' }}>
-                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>{sc.icon}</div>
-                    <div style={{ fontSize: '28px', fontWeight: 700, color: sc.color }}>{sc.value}</div>
-                    <div style={{ fontSize: '12px', color: '#6b6b80', marginTop: '4px' }}>{sc.label}</div>
+                  <div key={i} style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '18px' }}>
+                    <div style={{ fontSize: '26px', fontWeight: 700, color: sc.color }}>{sc.value}</div>
+                    <div style={{ fontSize: '11px', color: '#6b6b80', marginTop: '4px' }}>{sc.label}</div>
                   </div>
                 ))}
               </div>
-
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '16px' }}>
-                  <div style={{ fontSize: '12px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Filmat e Fundit</div>
+                  <div style={{ fontSize: '11px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Filmat e Fundit</div>
                   {movies.slice(0, 5).map((m: any) => (
                     <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                      {m.poster_url && <img src={m.poster_url} alt={m.title} style={{ width: '30px', height: '44px', objectFit: 'cover', borderRadius: '3px' }} />}
+                      {m.poster_url && <img src={m.poster_url} alt={m.title} style={{ width: '28px', height: '40px', objectFit: 'cover', borderRadius: '3px', flexShrink: 0 }} />}
                       <div>
                         <div style={{ fontSize: '12px', fontWeight: 500 }}>{m.title}</div>
                         <div style={{ fontSize: '11px', color: '#6b6b80' }}>{m.year} · {m.genre}</div>
@@ -232,15 +258,15 @@ export default function AdminPage() {
                   ))}
                 </div>
                 <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '16px' }}>
-                  <div style={{ fontSize: '12px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Userat e Fundit</div>
+                  <div style={{ fontSize: '11px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Userat e Fundit</div>
                   {users.slice(0, 5).map((u: any) => (
                     <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: '#b0b0c0' }}>
+                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: '#b0b0c0', flexShrink: 0 }}>
                         {u.email?.[0]?.toUpperCase()}
                       </div>
-                      <div>
-                        <div style={{ fontSize: '12px', fontWeight: 500 }}>{u.email}</div>
-                        <div style={{ fontSize: '11px', color: u.role === 'vip' ? '#f5a623' : '#6b6b80' }}>{(u.role || 'free').toUpperCase()}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
+                        <span style={{ ...getRoleStyle(u), fontSize: '10px', padding: '1px 6px', borderRadius: '3px' }}>{getRoleLabel(u)}</span>
                       </div>
                     </div>
                   ))}
@@ -264,87 +290,99 @@ export default function AdminPage() {
                   <input value={val} onChange={e => set(e.target.value)} placeholder={ph} type={type || 'text'} style={inp} />
                 </div>
               ))}
-
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Zhanri</label>
                 <select value={genre} onChange={e => setGenre(e.target.value)} style={inp}>
                   {['Aksion', 'Drama', 'Comedy', 'Sci-Fi', 'Thriller', 'Horror', 'Anime', 'Romance', 'Dokumentar'].map(g => <option key={g}>{g}</option>)}
                 </select>
               </div>
-
               <div style={{ gridColumn: '1/-1', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Përshkrimi</label>
                 <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Përshkrimi shqip..." rows={3} style={{ ...inp, resize: 'vertical' }} />
               </div>
-
               <div style={{ gridColumn: '1/-1', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Video URL * (Bunny embed / HLS)</label>
                 <input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://iframe.mediadelivery.net/embed/647882/VIDEO_ID?captions=sq" style={inp} />
               </div>
-
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Poster URL</label>
                 <input value={posterUrl} onChange={e => setPosterUrl(e.target.value)} placeholder="https://image.tmdb.org/t/p/w500/..." style={inp} />
               </div>
-
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Backdrop URL</label>
                 <input value={backdropUrl} onChange={e => setBackdropUrl(e.target.value)} placeholder="https://image.tmdb.org/t/p/original/..." style={inp} />
               </div>
-
               <div style={{ gridColumn: '1/-1', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Titra URL (.vtt) — opsionale nëse janë te Bunny</label>
                 <input value={subtitleUrl} onChange={e => setSubtitleUrl(e.target.value)} placeholder="https://cinealsubtitles.b-cdn.net/film-sq.vtt" style={inp} />
               </div>
-
               <div style={{ gridColumn: '1/-1', display: 'flex', gap: '20px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#b0b0c0' }}>
                   <input type="checkbox" checked={isTrending} onChange={e => setIsTrending(e.target.checked)} style={{ accentColor: '#e50914', width: '16px', height: '16px' }} />
-                  🔥 Trending
+                  Trending
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#b0b0c0' }}>
                   <input type="checkbox" checked={isFeatured} onChange={e => setIsFeatured(e.target.checked)} style={{ accentColor: '#e50914', width: '16px', height: '16px' }} />
-                  ⭐ Featured Hero
+                  Featured Hero
                 </label>
               </div>
-
               <div style={{ gridColumn: '1/-1', display: 'flex', gap: '10px' }}>
                 <button onClick={handleAdd} disabled={loading}
                   style={{ background: loading ? '#444' : '#e50914', border: 'none', color: '#fff', padding: '12px 28px', borderRadius: '5px', fontSize: '14px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer' }}>
-                  {loading ? '⏳ Duke shtuar...' : '✓ Shto Filmin'}
+                  {loading ? 'Duke shtuar...' : 'Shto Filmin'}
                 </button>
                 <button onClick={resetForm}
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#b0b0c0', padding: '12px 20px', borderRadius: '5px', fontSize: '13px', cursor: 'pointer' }}>
-                  ✕ Pastro
+                  Pastro
                 </button>
               </div>
             </div>
           )}
 
-          {/* MOVIES LIST */}
+          {/* MOVIES */}
           {active === 'movies' && (
             <div>
+              <div style={{ marginBottom: '16px', position: 'relative', display: 'inline-block' }}>
+                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b6b80', fontSize: '15px', pointerEvents: 'none' }}>⌕</span>
+                <input value={movieSearch} onChange={e => setMovieSearch(e.target.value)}
+                  placeholder="Kërko film, zhanër, vit..." style={{ ...inp, width: '280px', paddingLeft: '36px' }} />
+              </div>
+
               {editMovie && (
                 <div style={{ background: '#12121a', border: '1px solid rgba(229,9,20,0.3)', borderRadius: '10px', padding: '20px', marginBottom: '20px' }}>
-                  <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '16px', color: '#e50914' }}>✏️ Po edito: {editMovie.title}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '16px', color: '#e50914' }}>Po edito: {editMovie.title}</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     {[
                       { label: 'Titulli', key: 'title' },
+                      { label: 'Titulli Shqip', key: 'title_sq' },
                       { label: 'Viti', key: 'year' },
                       { label: 'Rating', key: 'rating' },
                       { label: 'Kohëzgjatja', key: 'duration' },
+                      { label: 'Zhanri', key: 'genre' },
                       { label: 'Video URL', key: 'video_url' },
                       { label: 'Poster URL', key: 'poster_url' },
+                      { label: 'Backdrop URL', key: 'backdrop_url' },
+                      { label: 'Titra URL', key: 'subtitle_url' },
                     ].map(({ label, key }) => (
                       <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase' }}>{label}</label>
                         <input value={editMovie[key] || ''} onChange={e => setEditMovie({ ...editMovie, [key]: e.target.value })} style={inp} />
                       </div>
                     ))}
+                    <div style={{ gridColumn: '1/-1', display: 'flex', gap: '16px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#b0b0c0', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={!!editMovie.is_trending} onChange={e => setEditMovie({ ...editMovie, is_trending: e.target.checked })} style={{ accentColor: '#e50914' }} />
+                        Trending
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#b0b0c0', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={editMovie.status === 'live'} onChange={e => setEditMovie({ ...editMovie, status: e.target.checked ? 'live' : 'draft' })} style={{ accentColor: '#22c55e' }} />
+                        Live
+                      </label>
+                    </div>
                     <div style={{ gridColumn: '1/-1', display: 'flex', gap: '10px' }}>
                       <button onClick={handleSaveEdit} disabled={loading}
                         style={{ background: '#22c55e', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '5px', fontSize: '13px', cursor: 'pointer', fontWeight: 500 }}>
-                        ✓ Ruaj ndryshimet
+                        Ruaj ndryshimet
                       </button>
                       <button onClick={() => setEditMovie(null)}
                         style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#b0b0c0', padding: '10px 16px', borderRadius: '5px', fontSize: '13px', cursor: 'pointer' }}>
@@ -355,6 +393,10 @@ export default function AdminPage() {
                 </div>
               )}
 
+              <div style={{ fontSize: '11px', color: '#6b6b80', marginBottom: '10px' }}>
+                {filteredMovies.length} filma{movieSearch ? ` — rezultate për "${movieSearch}"` : ''}
+              </div>
+
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
@@ -364,10 +406,10 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {movies.map((m: any) => (
+                  {filteredMovies.map((m: any) => (
                     <tr key={m.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                       <td style={{ padding: '10px 12px' }}>
-                        {m.poster_url && <img src={m.poster_url} alt={m.title} style={{ width: '30px', height: '44px', objectFit: 'cover', borderRadius: '3px' }} />}
+                        {m.poster_url && <img src={m.poster_url} alt={m.title} style={{ width: '28px', height: '40px', objectFit: 'cover', borderRadius: '3px' }} />}
                       </td>
                       <td style={{ padding: '10px 12px', fontSize: '13px', fontWeight: 500 }}>{m.title}</td>
                       <td style={{ padding: '10px 12px', fontSize: '12px', color: '#b0b0c0' }}>{m.year}</td>
@@ -380,7 +422,7 @@ export default function AdminPage() {
                       </td>
                       <td style={{ padding: '10px 12px' }}>
                         <div style={{ display: 'flex', gap: '6px' }}>
-                          <button onClick={() => setEditMovie(m)}
+                          <button onClick={() => { setEditMovie(m); window.scrollTo(0, 0) }}
                             style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', color: '#3b82f6', padding: '4px 10px', borderRadius: '3px', fontSize: '11px', cursor: 'pointer' }}>
                             Edito
                           </button>
@@ -400,6 +442,16 @@ export default function AdminPage() {
           {/* USERS */}
           {active === 'users' && (
             <div>
+              <div style={{ marginBottom: '16px', position: 'relative', display: 'inline-block' }}>
+                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b6b80', fontSize: '15px', pointerEvents: 'none' }}>⌕</span>
+                <input value={userSearch} onChange={e => setUserSearch(e.target.value)}
+                  placeholder="Kërko email, rol..." style={{ ...inp, width: '280px', paddingLeft: '36px' }} />
+              </div>
+
+              <div style={{ fontSize: '11px', color: '#6b6b80', marginBottom: '10px' }}>
+                {filteredUsers.length} usera · {stats.vipUsers} VIP
+              </div>
+
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
@@ -409,51 +461,51 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((u: any) => (
-                    <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                      <td style={{ padding: '12px', fontSize: '13px' }}>{u.email}</td>
-                      <td style={{ padding: '12px' }}>
-                        <span style={{ background: u.role === 'vip' ? 'rgba(245,166,35,0.15)' : 'rgba(255,255,255,0.05)', color: u.role === 'vip' ? '#f5a623' : '#6b6b80', fontSize: '11px', padding: '2px 8px', borderRadius: '3px', fontWeight: 500 }}>
-                          {(u.role || 'FREE').toUpperCase()}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px', fontSize: '12px', color: '#6b6b80' }}>
-                        {u.vip_expires_at ? new Date(u.vip_expires_at).toLocaleDateString('sq-AL') : '—'}
-                      </td>
-                      <td style={{ padding: '12px' }}>
-                        <span style={{ background: u.status === 'blocked' ? 'rgba(255,107,107,0.1)' : 'rgba(34,197,94,0.1)', color: u.status === 'blocked' ? '#ff6b6b' : '#22c55e', fontSize: '11px', padding: '2px 8px', borderRadius: '3px' }}>
-                          {u.status === 'blocked' ? 'Bllokuar' : 'Aktiv'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px' }}>
-                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                          {u.role !== 'vip' ? (
-                            <>
-                              {[
-                                { label: 'VIP 1 Muaj', days: 30 },
-                                { label: 'VIP 6 Muaj', days: 180 },
-                                { label: 'VIP 1 Vit', days: 365 },
-                              ].map(({ label, days }) => (
-                                <button key={days} onClick={() => handleSetVip(u.id, days)}
-                                  style={{ background: 'rgba(245,166,35,0.1)', border: '1px solid rgba(245,166,35,0.3)', color: '#f5a623', padding: '4px 8px', borderRadius: '3px', fontSize: '10px', cursor: 'pointer' }}>
-                                  ⭐ {label}
+                  {filteredUsers.map((u: any) => {
+                    const roleLabel = getRoleLabel(u)
+                    const rs = getRoleStyle(u)
+                    return (
+                      <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        <td style={{ padding: '12px', fontSize: '13px' }}>{u.email}</td>
+                        <td style={{ padding: '12px' }}>
+                          <span style={{ ...rs, fontSize: '11px', padding: '2px 8px', borderRadius: '3px', fontWeight: 500 }}>{roleLabel}</span>
+                        </td>
+                        <td style={{ padding: '12px', fontSize: '12px', color: '#6b6b80' }}>
+                          {u.vip_expires_at ? new Date(u.vip_expires_at).toLocaleDateString('sq-AL') : '—'}
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          <span style={{ background: u.status === 'blocked' ? 'rgba(255,107,107,0.1)' : 'rgba(34,197,94,0.1)', color: u.status === 'blocked' ? '#ff6b6b' : '#22c55e', fontSize: '11px', padding: '2px 8px', borderRadius: '3px' }}>
+                            {u.status === 'blocked' ? 'Bllokuar' : 'Aktiv'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            {roleLabel !== 'ADMIN' && (
+                              <>
+                                {u.role !== 'vip' ? (
+                                  [{ label: '1 Muaj', days: 30 }, { label: '6 Muaj', days: 180 }, { label: '1 Vit', days: 365 }].map(({ label, days }) => (
+                                    <button key={days} onClick={() => handleSetVip(u.id, days)}
+                                      style={{ background: 'rgba(245,166,35,0.1)', border: '1px solid rgba(245,166,35,0.3)', color: '#f5a623', padding: '4px 8px', borderRadius: '3px', fontSize: '10px', cursor: 'pointer' }}>
+                                      VIP {label}
+                                    </button>
+                                  ))
+                                ) : (
+                                  <button onClick={() => handleRemoveVip(u.id)}
+                                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#b0b0c0', padding: '4px 10px', borderRadius: '3px', fontSize: '10px', cursor: 'pointer' }}>
+                                    Hiq VIP
+                                  </button>
+                                )}
+                                <button onClick={() => handleBlock(u.id, u.status)}
+                                  style={{ background: u.status === 'blocked' ? 'rgba(34,197,94,0.1)' : 'rgba(255,107,107,0.1)', border: `1px solid ${u.status === 'blocked' ? 'rgba(34,197,94,0.3)' : 'rgba(255,107,107,0.3)'}`, color: u.status === 'blocked' ? '#22c55e' : '#ff6b6b', padding: '4px 10px', borderRadius: '3px', fontSize: '10px', cursor: 'pointer' }}>
+                                  {u.status === 'blocked' ? 'Aktivizo' : 'Blloko'}
                                 </button>
-                              ))}
-                            </>
-                          ) : (
-                            <button onClick={() => handleRemoveVip(u.id)}
-                              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#b0b0c0', padding: '4px 10px', borderRadius: '3px', fontSize: '10px', cursor: 'pointer' }}>
-                              Hiq VIP
-                            </button>
-                          )}
-                          <button onClick={() => handleBlock(u.id, u.status)}
-                            style={{ background: u.status === 'blocked' ? 'rgba(34,197,94,0.1)' : 'rgba(255,107,107,0.1)', border: `1px solid ${u.status === 'blocked' ? 'rgba(34,197,94,0.3)' : 'rgba(255,107,107,0.3)'}`, color: u.status === 'blocked' ? '#22c55e' : '#ff6b6b', padding: '4px 10px', borderRadius: '3px', fontSize: '10px', cursor: 'pointer' }}>
-                            {u.status === 'blocked' ? 'Aktivizo' : 'Blloko'}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -461,9 +513,23 @@ export default function AdminPage() {
 
           {/* SETTINGS */}
           {active === 'settings' && (
-            <div style={{ maxWidth: '600px' }}>
-              <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '24px', marginBottom: '16px' }}>
-                <h2 style={{ fontSize: '15px', fontWeight: 500, marginBottom: '16px', color: '#b0b0c0' }}>🐰 Bunny.net Konfigurimi</h2>
+            <div style={{ maxWidth: '620px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '20px' }}>
+                <div style={{ fontSize: '11px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '14px' }}>Informacioni i Sitit</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Titulli i faqes</label>
+                    <input value={siteTitle} onChange={e => setSiteTitle(e.target.value)} style={inp} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Email kontakti</label>
+                    <input value={contactEmail} onChange={e => setContactEmail(e.target.value)} style={inp} />
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '20px' }}>
+                <div style={{ fontSize: '11px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '14px' }}>Bunny.net Konfigurimi</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Library ID</label>
@@ -473,8 +539,21 @@ export default function AdminPage() {
                     <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Subtitles CDN</label>
                     <input defaultValue="https://cinealsubtitles.b-cdn.net" style={inp} readOnly />
                   </div>
-                  <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '6px', padding: '12px', fontSize: '12px', color: '#22c55e' }}>
-                    💡 Embed URL format: https://iframe.mediadelivery.net/embed/647882/VIDEO_ID?captions=sq
+                  <div style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: '6px', padding: '10px 12px', fontSize: '12px', color: '#22c55e' }}>
+                    Embed URL: https://iframe.mediadelivery.net/embed/647882/VIDEO_ID?captions=sq
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '20px' }}>
+                <div style={{ fontSize: '11px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '14px' }}>Mirëmbajtja</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }} onClick={() => setMaintenance(!maintenance)}>
+                  <div style={{ width: '40px', height: '22px', borderRadius: '11px', background: maintenance ? '#e50914' : 'rgba(255,255,255,0.1)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                    <div style={{ position: 'absolute', top: '3px', left: maintenance ? '21px' : '3px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px' }}>Modaliteti i mirëmbajtjes</div>
+                    <div style={{ fontSize: '11px', color: '#6b6b80', marginTop: '2px' }}>Kur aktiv, faqja shfaq mesazh mirëmbajtjeje për vizitorët</div>
                   </div>
                 </div>
               </div>
