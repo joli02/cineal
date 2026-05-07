@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { supabase } from '@/lib/supabase'
@@ -9,15 +9,18 @@ import CinealIntro from '@/components/CinealIntro'
 
 export default function FilmPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const slug = params?.slug as string
+  const autoPlay = searchParams.get('play') === 'true'
+
   const [movie, setMovie] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [inWatchlist, setInWatchlist] = useState(false)
   const [msg, setMsg] = useState('')
   const [similar, setSimilar] = useState<any[]>([])
-  const [showIntro, setShowIntro] = useState(false)  // ← NDRYSHUAR: false, jo true
-  const [playing, setPlaying] = useState(false)       // ← SHTUAR: kontrollon playerin
+  const [showIntro, setShowIntro] = useState(autoPlay) // auto-start nëse ?play=true
+  const [playing, setPlaying] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -77,12 +80,10 @@ export default function FilmPage() {
     )
   }
 
-  // ← SHTUAR: Klikimi i butonit Shiko Tani
   const handlePlay = () => {
     setShowIntro(true)
   }
 
-  // ← SHTUAR: Pas intro, hap playerin
   const handleIntroComplete = () => {
     setShowIntro(false)
     setPlaying(true)
@@ -94,7 +95,6 @@ export default function FilmPage() {
     url?.includes('youtube.com/embed') ||
     url?.includes('player.mediadelivery.net')
 
-  // ← NDRYSHUAR: Intro shfaqet vetëm pas klikimit të play
   if (showIntro) return <CinealIntro onComplete={handleIntroComplete} />
 
   if (loading) return (
@@ -154,9 +154,7 @@ export default function FilmPage() {
               </p>
             )}
 
-            {/* ← NDRYSHUAR: Butonat */}
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              {/* Butoni Shiko Tani — tani e aktivizon intro */}
               {videoUrl && (
                 <button
                   onClick={handlePlay}
@@ -179,7 +177,7 @@ export default function FilmPage() {
           </div>
         </div>
 
-        {/* ← NDRYSHUAR: Player shfaqet vetëm pas intro (playing === true) */}
+        {/* Player */}
         {videoUrl && playing && (
           <div style={{ marginTop: '28px', borderRadius: '10px', overflow: 'hidden', background: '#000', width: '100%', maxWidth: '880px', aspectRatio: '16/9', position: 'relative' }}>
             {isEmbed(videoUrl) ? (
