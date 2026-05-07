@@ -180,6 +180,8 @@ export default function AdminPage() {
   const [vttResult, setVttResult] = useState('')
   const [vttTranslating, setVttTranslating] = useState(false)
   const [vttFileName, setVttFileName] = useState('')
+  const [vttUploading, setVttUploading] = useState(false)
+  const [vttUploadedUrl, setVttUploadedUrl] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Settings
@@ -397,6 +399,31 @@ export default function AdminPage() {
     a.download = vttFileName ? vttFileName.replace('.vtt', '-sq.vtt') : 'titrat-sq.vtt'
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const handleUploadToBunny = async () => {
+    if (!vttResult) return
+    setVttUploading(true)
+    setVttUploadedUrl('')
+    try {
+      const fileName = vttFileName
+        ? vttFileName.replace(/\.(vtt|srt)$/i, '-sq.vtt')
+        : 'titrat-sq.vtt'
+      const blob = new Blob([vttResult], { type: 'text/vtt' })
+
+      const res = await fetch(`/api/bunny-upload?filename=${encodeURIComponent(fileName)}`, {
+        method: 'POST',
+        body: blob,
+        headers: { 'Content-Type': 'text/vtt' },
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Upload dështoi')
+      setVttUploadedUrl(data.url)
+      showToast('Titrat u ngarkuan te Bunny CDN!')
+    } catch (e: any) {
+      showToast(e.message || 'Gabim gjatë ngarkimit!', true)
+    }
+    setVttUploading(false)
   }
 
   const filteredMovies = movies.filter(m =>
@@ -900,11 +927,33 @@ export default function AdminPage() {
                         {vttResult.split('\n').length} rreshta · gati për Bunny CDN
                       </div>
                     </div>
-                    <button onClick={handleDownloadVtt}
-                      style={{ background: '#22c55e', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                      Shkarko .vtt
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={handleDownloadVtt}
+                        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>
+                        Shkarko .vtt
+                      </button>
+                      <button onClick={handleUploadToBunny} disabled={vttUploading}
+                        style={{ background: vttUploading ? '#2a2a3a' : '#f5a623', border: 'none', color: vttUploading ? '#6b6b80' : '#000', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: vttUploading ? 'not-allowed' : 'pointer' }}>
+                        {vttUploading ? 'Duke ngarkuar...' : 'Ngarko te Bunny'}
+                      </button>
+                    </div>
                   </div>
+
+                  {/* URL pas ngarkimit */}
+                  {vttUploadedUrl && (
+                    <div style={{ background: 'rgba(245,166,35,0.06)', border: '1px solid rgba(245,166,35,0.2)', borderRadius: '6px', padding: '12px', marginBottom: '12px' }}>
+                      <div style={{ fontSize: '11px', color: '#f5a623', marginBottom: '6px', fontWeight: 500 }}>CDN URL — kopjo te admin filmi:</div>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <input readOnly value={vttUploadedUrl}
+                          style={{ ...inp, fontSize: '11px', fontFamily: 'monospace', flex: 1 }} />
+                        <button onClick={() => { navigator.clipboard.writeText(vttUploadedUrl); showToast('URL u kopjua!') }}
+                          style={{ background: '#f5a623', border: 'none', color: '#000', padding: '10px 14px', borderRadius: '5px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
+                          Kopjo
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <textarea
                     readOnly value={vttResult}
                     rows={8}
