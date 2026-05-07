@@ -1,7 +1,6 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
 
 const NAV = [
   { id: 'dashboard', icon: '⊞', label: 'Dashboard' },
@@ -11,15 +10,26 @@ const NAV = [
   { id: 'settings', icon: '⚙', label: 'Cilësimet' },
 ]
 
+const TMDB_KEY = process.env.NEXT_PUBLIC_TMDB_KEY
+const TMDB_BASE = 'https://api.themoviedb.org/3'
+const TMDB_IMG = 'https://image.tmdb.org/t/p'
+
 export default function AdminPage() {
   const [active, setActive] = useState('dashboard')
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState('')
   const [toastErr, setToastErr] = useState(false)
-  const router = useRouter()
 
   const [stats, setStats] = useState({ movies: 0, users: 0, views: 0, vipUsers: 0 })
 
+  // TMDB search
+  const [tmdbQuery, setTmdbQuery] = useState('')
+  const [tmdbResults, setTmdbResults] = useState<any[]>([])
+  const [tmdbSearching, setTmdbSearching] = useState(false)
+  const [selectedMovie, setSelectedMovie] = useState<any>(null)
+  const searchTimer = useRef<any>(null)
+
+  // Add movie form
   const [title, setTitle] = useState('')
   const [titleSq, setTitleSq] = useState('')
   const [year, setYear] = useState('')
@@ -33,17 +43,29 @@ export default function AdminPage() {
   const [subtitleUrl, setSubtitleUrl] = useState('')
   const [isTrending, setIsTrending] = useState(false)
   const [isFeatured, setIsFeatured] = useState(false)
+  const [tmdbId, setTmdbId] = useState<number | null>(null)
 
+  // Movies list
   const [movies, setMovies] = useState<any[]>([])
   const [movieSearch, setMovieSearch] = useState('')
   const [editMovie, setEditMovie] = useState<any>(null)
 
+  // Users list
   const [users, setUsers] = useState<any[]>([])
   const [userSearch, setUserSearch] = useState('')
 
+  // Settings
   const [maintenance, setMaintenance] = useState(false)
   const [siteTitle, setSiteTitle] = useState('Cineal — Filma me Titra Shqip')
   const [contactEmail, setContactEmail] = useState('info@cineal.stream')
+
+  const GENRE_MAP: Record<number, string> = {
+    28: 'Aksion', 12: 'Aksion', 16: 'Anime', 35: 'Comedy',
+    80: 'Thriller', 99: 'Dokumentar', 18: 'Drama', 10751: 'Drama',
+    14: 'Sci-Fi', 36: 'Drama', 27: 'Horror', 10402: 'Drama',
+    9648: 'Thriller', 10749: 'Romance', 878: 'Sci-Fi',
+    10770: 'Drama', 53: 'Thriller', 10752: 'Aksion', 37: 'Aksion'
+  }
 
   useEffect(() => {
     fetchStats()
@@ -51,6 +73,62 @@ export default function AdminPage() {
     if (active === 'users') fetchUsers()
     if (active === 'dashboard') { fetchStats(); fetchMovies(); fetchUsers() }
   }, [active])
+
+  // TMDB search with debounce
+  useEffect(() => {
+    if (!tmdbQuery.trim() || tmdbQuery.length < 2) { setTmdbResults([]); return }
+    clearTimeout(searchTimer.current)
+    searchTimer.current = setTimeout(() => searchTMDB(tmdbQuery), 400)
+    return () => clearTimeout(searchTimer.current)
+  }, [tmdbQuery])
+
+  async function searchTMDB(query: string) {
+    setTmdbSearching(true)
+    try {
+      const res = await fetch(`${TMDB_BASE}/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`)
+      const data = await res.json()
+      setTmdbResults(data.results?.slice(0, 6) || [])
+    } catch { setTmdbResults([]) }
+    setTmdbSearching(false)
+  }
+
+  async function selectTMDBMovie(movie: any) {
+    setTmdbSearching(true)
+    setTmdbResults([])
+    setTmdbQuery('')
+    try {
+      // Merr detajet e plota
+      const res = await fetch(`${TMDB_BASE}/movie/${movie.id}?api_key=${TMDB_KEY}&language=en-US`)
+      const details = await res.json()
+
+      // Zgjidh zhanrin
+      const genreId = details.genres?.[0]?.id
+      const mappedGenre = GENRE_MAP[genreId] || 'Drama'
+
+      // Kohëzgjatja
+      const mins = details.runtime || 0
+      const h = Math.floor(mins / 60)
+      const m = mins % 60
+      const durationStr = h > 0 ? `${h}h ${m}min` : `${m}min`
+
+      // Viti
+      const yr = details.release_date?.split('-')[0] || ''
+
+      setSelectedMovie(details)
+      setTitle(details.title || '')
+      setTitleSq(details.title || '')
+      setYear(yr)
+      setGenre(mappedGenre)
+      setDuration(durationStr)
+      setRating(details.vote_average ? details.vote_average.toFixed(1) : '')
+      setDescription(details.overview || '')
+      setPosterUrl(details.poster_path ? `${TMDB_IMG}/w500${details.poster_path}` : '')
+      setBackdropUrl(details.backdrop_path ? `${TMDB_IMG}/original${details.backdrop_path}` : '')
+      setTmdbId(details.id)
+
+    } catch { showToast('Gabim me TMDB!', true) }
+    setTmdbSearching(false)
+  }
 
   async function fetchStats() {
     const { count: mc } = await supabase.from('movies').select('*', { count: 'exact', head: true })
@@ -76,13 +154,14 @@ export default function AdminPage() {
     setTimeout(() => setToast(''), 3000)
   }
 
-  const slug = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  const slugify = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
   const resetForm = () => {
     setTitle(''); setTitleSq(''); setYear(''); setGenre('Aksion')
     setDuration(''); setRating(''); setDescription(''); setVideoUrl('')
     setPosterUrl(''); setBackdropUrl(''); setSubtitleUrl('')
     setIsTrending(false); setIsFeatured(false)
+    setSelectedMovie(null); setTmdbId(null); setTmdbQuery('')
   }
 
   const handleAdd = async () => {
@@ -91,17 +170,28 @@ export default function AdminPage() {
     setLoading(true)
     try {
       const { error } = await supabase.from('movies').insert({
-        title: title.trim(), title_sq: titleSq.trim() || title.trim(),
-        slug: slug(title), year: year ? parseInt(year) : null,
-        genre, duration: duration || null, rating: rating ? parseFloat(rating) : null,
-        description: description || null, video_url: videoUrl.trim(),
-        poster_url: posterUrl || null, backdrop_url: backdropUrl || null,
-        subtitle_url: subtitleUrl || null, is_trending: isTrending,
-        is_featured: isFeatured, status: 'live', views: 0,
+        title: title.trim(),
+        title_sq: titleSq.trim() || title.trim(),
+        slug: slugify(title),
+        year: year ? parseInt(year) : null,
+        genre,
+        duration: duration || null,
+        rating: rating ? parseFloat(rating) : null,
+        description: description || null,
+        video_url: videoUrl.trim(),
+        poster_url: posterUrl || null,
+        backdrop_url: backdropUrl || null,
+        subtitle_url: subtitleUrl || null,
+        is_trending: isTrending,
+        is_featured: isFeatured,
+        status: 'live',
+        views: 0,
+        tmdb_id: tmdbId,
       })
       if (error) throw error
-      showToast(`"${title}" u shtua!`)
-      resetForm(); fetchStats()
+      showToast(`"${title}" u shtua me sukses!`)
+      resetForm()
+      fetchStats()
     } catch (e: any) { showToast(e.message, true) }
     setLoading(false)
   }
@@ -277,64 +367,131 @@ export default function AdminPage() {
 
           {/* ADD MOVIE */}
           {active === 'add' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', maxWidth: '900px' }}>
-              {[
-                { label: 'Titulli * (anglisht)', val: title, set: setTitle, ph: 'Inception' },
-                { label: 'Titulli Shqip', val: titleSq, set: setTitleSq, ph: 'Fillimi' },
-                { label: 'Viti', val: year, set: setYear, ph: '2025', type: 'number' },
-                { label: 'Kohëzgjatja', val: duration, set: setDuration, ph: '2h 14min' },
-                { label: 'Rating IMDb', val: rating, set: setRating, ph: '7.5', type: 'number' },
-              ].map(({ label, val, set, ph, type }) => (
-                <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                  <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>{label}</label>
-                  <input value={val} onChange={e => set(e.target.value)} placeholder={ph} type={type || 'text'} style={inp} />
+            <div style={{ maxWidth: '900px' }}>
+
+              {/* TMDB Search Box */}
+              <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '20px', marginBottom: '24px' }}>
+                <div style={{ fontSize: '11px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>
+                  Kërko filmin — të dhënat plotësohen automatikisht
                 </div>
-              ))}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Zhanri</label>
-                <select value={genre} onChange={e => setGenre(e.target.value)} style={inp}>
-                  {['Aksion', 'Drama', 'Comedy', 'Sci-Fi', 'Thriller', 'Horror', 'Anime', 'Romance', 'Dokumentar'].map(g => <option key={g}>{g}</option>)}
-                </select>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    value={tmdbQuery}
+                    onChange={e => setTmdbQuery(e.target.value)}
+                    placeholder="Shkruaj emrin e filmit anglisht... (p.sh. Inception)"
+                    style={{ ...inp, paddingLeft: '40px' }}
+                  />
+                  <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px', color: '#6b6b80' }}>
+                    {tmdbSearching ? '⟳' : '⌕'}
+                  </span>
+                </div>
+
+                {/* Rezultatet TMDB */}
+                {tmdbResults.length > 0 && (
+                  <div style={{ marginTop: '8px', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', overflow: 'hidden' }}>
+                    {tmdbResults.map((m, i) => (
+                      <div key={m.id} onClick={() => selectTMDBMovie(m)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', cursor: 'pointer', background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent', borderBottom: i < tmdbResults.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(229,9,20,0.08)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent')}>
+                        {m.poster_path
+                          ? <img src={`${TMDB_IMG}/w92${m.poster_path}`} alt={m.title} style={{ width: '32px', height: '48px', objectFit: 'cover', borderRadius: '3px', flexShrink: 0 }} />
+                          : <div style={{ width: '32px', height: '48px', background: '#1a1a2e', borderRadius: '3px', flexShrink: 0 }} />
+                        }
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 500 }}>{m.title}</div>
+                          <div style={{ fontSize: '11px', color: '#6b6b80' }}>
+                            {m.release_date?.split('-')[0]} · ⭐ {m.vote_average?.toFixed(1)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Film i zgjedhur */}
+                {selectedMovie && (
+                  <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '8px', padding: '10px 14px' }}>
+                    {selectedMovie.poster_path && (
+                      <img src={`${TMDB_IMG}/w92${selectedMovie.poster_path}`} alt={selectedMovie.title} style={{ width: '32px', height: '48px', objectFit: 'cover', borderRadius: '3px' }} />
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 500, color: '#22c55e' }}>{selectedMovie.title}</div>
+                      <div style={{ fontSize: '11px', color: '#6b6b80' }}>Të dhënat u plotësuan automatikisht nga TMDB</div>
+                    </div>
+                    <button onClick={() => { setSelectedMovie(null); setTmdbId(null) }}
+                      style={{ background: 'none', border: 'none', color: '#6b6b80', cursor: 'pointer', fontSize: '16px' }}>✕</button>
+                  </div>
+                )}
               </div>
-              <div style={{ gridColumn: '1/-1', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Përshkrimi</label>
-                <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Përshkrimi shqip..." rows={3} style={{ ...inp, resize: 'vertical' }} />
-              </div>
-              <div style={{ gridColumn: '1/-1', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Video URL * (Bunny embed / HLS)</label>
-                <input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://iframe.mediadelivery.net/embed/647882/VIDEO_ID?captions=sq" style={inp} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Poster URL</label>
-                <input value={posterUrl} onChange={e => setPosterUrl(e.target.value)} placeholder="https://image.tmdb.org/t/p/w500/..." style={inp} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Backdrop URL</label>
-                <input value={backdropUrl} onChange={e => setBackdropUrl(e.target.value)} placeholder="https://image.tmdb.org/t/p/original/..." style={inp} />
-              </div>
-              <div style={{ gridColumn: '1/-1', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Titra URL (.vtt) — opsionale nëse janë te Bunny</label>
-                <input value={subtitleUrl} onChange={e => setSubtitleUrl(e.target.value)} placeholder="https://cinealsubtitles.b-cdn.net/film-sq.vtt" style={inp} />
-              </div>
-              <div style={{ gridColumn: '1/-1', display: 'flex', gap: '20px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#b0b0c0' }}>
-                  <input type="checkbox" checked={isTrending} onChange={e => setIsTrending(e.target.checked)} style={{ accentColor: '#e50914', width: '16px', height: '16px' }} />
-                  Trending
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#b0b0c0' }}>
-                  <input type="checkbox" checked={isFeatured} onChange={e => setIsFeatured(e.target.checked)} style={{ accentColor: '#e50914', width: '16px', height: '16px' }} />
-                  Featured Hero
-                </label>
-              </div>
-              <div style={{ gridColumn: '1/-1', display: 'flex', gap: '10px' }}>
-                <button onClick={handleAdd} disabled={loading}
-                  style={{ background: loading ? '#444' : '#e50914', border: 'none', color: '#fff', padding: '12px 28px', borderRadius: '5px', fontSize: '14px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer' }}>
-                  {loading ? 'Duke shtuar...' : 'Shto Filmin'}
-                </button>
-                <button onClick={resetForm}
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#b0b0c0', padding: '12px 20px', borderRadius: '5px', fontSize: '13px', cursor: 'pointer' }}>
-                  Pastro
-                </button>
+
+              {/* Forma */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                {[
+                  { label: 'Titulli * (anglisht)', val: title, set: setTitle, ph: 'Inception' },
+                  { label: 'Titulli Shqip', val: titleSq, set: setTitleSq, ph: 'Fillimi' },
+                  { label: 'Viti', val: year, set: setYear, ph: '2025', type: 'number' },
+                  { label: 'Kohëzgjatja', val: duration, set: setDuration, ph: '2h 14min' },
+                  { label: 'Rating IMDb', val: rating, set: setRating, ph: '7.5', type: 'number' },
+                ].map(({ label, val, set, ph, type }) => (
+                  <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>{label}</label>
+                    <input value={val} onChange={e => set(e.target.value)} placeholder={ph} type={type || 'text'} style={inp} />
+                  </div>
+                ))}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Zhanri</label>
+                  <select value={genre} onChange={e => setGenre(e.target.value)} style={inp}>
+                    {['Aksion', 'Drama', 'Comedy', 'Sci-Fi', 'Thriller', 'Horror', 'Anime', 'Romance', 'Dokumentar'].map(g => <option key={g}>{g}</option>)}
+                  </select>
+                </div>
+                <div style={{ gridColumn: '1/-1', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Përshkrimi</label>
+                  <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Përshkrimi shqip..." rows={3} style={{ ...inp, resize: 'vertical' }} />
+                </div>
+
+                {/* Video URL — e vetmja e detyrueshme manuale */}
+                <div style={{ gridColumn: '1/-1', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '10px', color: '#e50914', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    Video URL * — nga Bunny.net
+                  </label>
+                  <input value={videoUrl} onChange={e => setVideoUrl(e.target.value)}
+                    placeholder="https://iframe.mediadelivery.net/embed/647882/VIDEO_ID?captions=sq" style={{ ...inp, borderColor: 'rgba(229,9,20,0.3)' }} />
+                  <span style={{ fontSize: '11px', color: '#6b6b80' }}>Shko te Bunny.net → Stream → Library → kopjo Video ID</span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Poster URL {selectedMovie && <span style={{ color: '#22c55e' }}>✓ TMDB</span>}</label>
+                  <input value={posterUrl} onChange={e => setPosterUrl(e.target.value)} placeholder="https://image.tmdb.org/t/p/w500/..." style={inp} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Backdrop URL {selectedMovie && <span style={{ color: '#22c55e' }}>✓ TMDB</span>}</label>
+                  <input value={backdropUrl} onChange={e => setBackdropUrl(e.target.value)} placeholder="https://image.tmdb.org/t/p/original/..." style={inp} />
+                </div>
+                <div style={{ gridColumn: '1/-1', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Titra URL (.vtt) — opsionale</label>
+                  <input value={subtitleUrl} onChange={e => setSubtitleUrl(e.target.value)} placeholder="https://cinealsubtitles.b-cdn.net/film-sq.vtt" style={inp} />
+                </div>
+                <div style={{ gridColumn: '1/-1', display: 'flex', gap: '20px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#b0b0c0' }}>
+                    <input type="checkbox" checked={isTrending} onChange={e => setIsTrending(e.target.checked)} style={{ accentColor: '#e50914', width: '16px', height: '16px' }} />
+                    Trending
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#b0b0c0' }}>
+                    <input type="checkbox" checked={isFeatured} onChange={e => setIsFeatured(e.target.checked)} style={{ accentColor: '#e50914', width: '16px', height: '16px' }} />
+                    Featured Hero
+                  </label>
+                </div>
+                <div style={{ gridColumn: '1/-1', display: 'flex', gap: '10px' }}>
+                  <button onClick={handleAdd} disabled={loading}
+                    style={{ background: loading ? '#444' : '#e50914', border: 'none', color: '#fff', padding: '12px 28px', borderRadius: '5px', fontSize: '14px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer' }}>
+                    {loading ? 'Duke shtuar...' : 'Shto Filmin'}
+                  </button>
+                  <button onClick={resetForm}
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#b0b0c0', padding: '12px 20px', borderRadius: '5px', fontSize: '13px', cursor: 'pointer' }}>
+                    Pastro
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -347,7 +504,6 @@ export default function AdminPage() {
                 <input value={movieSearch} onChange={e => setMovieSearch(e.target.value)}
                   placeholder="Kërko film, zhanër, vit..." style={{ ...inp, width: '280px', paddingLeft: '36px' }} />
               </div>
-
               {editMovie && (
                 <div style={{ background: '#12121a', border: '1px solid rgba(229,9,20,0.3)', borderRadius: '10px', padding: '20px', marginBottom: '20px' }}>
                   <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '16px', color: '#e50914' }}>Po edito: {editMovie.title}</div>
@@ -392,11 +548,9 @@ export default function AdminPage() {
                   </div>
                 </div>
               )}
-
               <div style={{ fontSize: '11px', color: '#6b6b80', marginBottom: '10px' }}>
                 {filteredMovies.length} filma{movieSearch ? ` — rezultate për "${movieSearch}"` : ''}
               </div>
-
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
@@ -447,11 +601,9 @@ export default function AdminPage() {
                 <input value={userSearch} onChange={e => setUserSearch(e.target.value)}
                   placeholder="Kërko email, rol..." style={{ ...inp, width: '280px', paddingLeft: '36px' }} />
               </div>
-
               <div style={{ fontSize: '11px', color: '#6b6b80', marginBottom: '10px' }}>
                 {filteredUsers.length} usera · {stats.vipUsers} VIP
               </div>
-
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
@@ -527,7 +679,6 @@ export default function AdminPage() {
                   </div>
                 </div>
               </div>
-
               <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '20px' }}>
                 <div style={{ fontSize: '11px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '14px' }}>Bunny.net Konfigurimi</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -544,7 +695,6 @@ export default function AdminPage() {
                   </div>
                 </div>
               </div>
-
               <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '20px' }}>
                 <div style={{ fontSize: '11px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '14px' }}>Mirëmbajtja</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }} onClick={() => setMaintenance(!maintenance)}>
