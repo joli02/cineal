@@ -58,18 +58,56 @@ function isTimestamp(line: string) {
 
 // ─── OpenAI translate ────────────────────────────────────────────
 async function translateChunk(chunk: string, context: string, apiKey: string): Promise<string> {
-  const prompt = `Ti je përkthyes profesionist i titrave të filmit nga anglisht në shqip standarde.
+  const prompt = `Ti je përkthyes profesionist i titrave të filmit nga anglisht në shqip standarde. Ke përvojë të gjerë me filma dhe e njeh mirë kulturën shqiptare dhe angleze.
 
 KONTEKSTI I FILMIT: ${context}
 
-RREGULLAT:
-1. Përkthe vetëm tekstin e dialogut — MOS prek kurrë rreshtat me timestamp (p.sh. 00:00:01.000 --> 00:00:03.000)
-2. MOS prek numrat e bllokut (1, 2, 3...)
-3. MOS prek rreshtat bosh
-4. Ruaj emrat e personazheve, vendeve dhe markave ashtu siç janë
-5. Përdor shqipe natyrore — jo perkthim literal fjalë-për-fjalë
-6. Respekto tonin e filmit (aksion, komedi, drama etj.)
-7. Kthe VETËM VTT-në e përkthyer — pa komente shtesë
+═══ RREGULLAT E FORMATIT (KRITIKE — MOS I SHKEL KURRË) ═══
+1. MOS prek KURRË rreshtat me timestamp: (00:00:01.000 --> 00:00:03.000)
+2. MOS prek KURRË numrat e bllokut (1, 2, 3...)
+3. MOS prek KURRË rreshtat bosh midis bloqeve
+4. Kthe VETËM VTT-në e përkthyer — zero komente, zero shpjegime
+
+═══ RREGULLAT E GJUHËS ═══
+5. Shprehjet idiomatike — ADAPTO, mos përkthe fjalë-për-fjalë:
+   - "cut me some slack" → "më lëre rehat" / "bëj pak durim"
+   - "barking up the wrong tree" → "po kërkon gabim" / "je në rrugë të gabuar"
+   - "going downtown" (polici) → "po të çoj në komisariat"
+   - "lay low" → "fshihu" / "rri i qetë"
+   - "bailed on us" → "na braktisi" / "na la baltë"
+   - "get some shut-eye" → "flij pak" / "merr gjumë"
+   - "jack squat" → "asgjë fare" / "zero"
+   - "knee-high to a grasshopper" → "që kur ishim fëmijë" / "që në vegjëli"
+   - "don't jinx it" → "mos e prish me sy" / "mos e sysh"
+   - "acting shady" → "ka vepruar dyshimtë" / "ka bërë lëvizje të çuditshme"
+
+6. Slang dhe humor — ruaj tonin, adapto:
+   - Fjalë komike si "kaboom", "dork", "holy moly" → gjej ekuivalentin shqip natyral
+   - "dork" → "torollak" / "nenez" (JO "budalla")
+   - "holy moly" → "o zot i madh" / "çfarë dreqin"
+   - Humor i thatë → ruaj shkurtësinë dhe tonin
+
+7. Termet teknike dhe shkencorë:
+   - Lëri anglisht nëse nuk kanë ekuivalent të mirë shqip: "quantum entanglement", "neural network"
+   - Shto sqarim vetëm nëse konteksti e kërkon
+
+8. Referencat kulturore:
+   - Emra filmash, personazhesh, markash → MOS i ndrysho (Han Solo, FBI, Murphy's law)
+   - "Murphy's law" → "Ligji i Murphyt" ose lëre anglisht
+
+9. Efektet zanore dhe didaskali:
+   - [Explosion] → [Shpërthim] ose lëre anglisht — zgjidh bazuar në kontekst
+   - [Narrator] → [Narratori]
+   - Ruan kllapat [] gjithmonë
+
+10. Dialog i shkurtër dhe dramatik:
+    - Ruaj shkurtësinë — mos shto fjalë pa nevojë
+    - "I know." → "E di." (jo "Unë e di këtë gjë")
+    - Thirrjet si "Roger that" → "Kuptova" / "Marrë"
+
+11. Personazhet dhe emrat:
+    - Emrat e personazheve MOS i ndrysho kurrë (Marco, Sarah etj.)
+    - Titujt si "detective" → "detektiv"
 
 VTT PER PERKTHIM:
 ${chunk}`
