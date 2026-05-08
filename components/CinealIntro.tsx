@@ -1,17 +1,35 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 export default function CinealIntro({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState<'loading' | 'logo' | 'zoom'>('loading')
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
+    // Krijo audio element
+    const audio = new Audio('/cineal_audio.mp3')
+    audio.volume = 0.85
+    audioRef.current = audio
+
     // 1. Loading spinner për 1.2s
     const t1 = setTimeout(() => setPhase('logo'), 1200)
-    // 2. Logo shfaqet e vogël
-    const t2 = setTimeout(() => setPhase('zoom'), 1700)
-    // 3. Logo zmadhohet + zhduket → onComplete
+
+    // 2. Logo shfaqet e vogël — luan audio
+    const t2 = setTimeout(() => {
+      setPhase('zoom')
+      audio.play().catch(() => {}) // catch nëse browser bllokon autoplay
+    }, 1700)
+
+    // 3. onComplete
     const t3 = setTimeout(() => onComplete(), 2600)
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
+
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
+      clearTimeout(t3)
+      audio.pause()
+      audio.src = ''
+    }
   }, [])
 
   return (
@@ -20,7 +38,6 @@ export default function CinealIntro({ onComplete }: { onComplete: () => void }) 
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 9999,
     }}>
-
       {/* Loading spinner */}
       {phase === 'loading' && (
         <div style={{
