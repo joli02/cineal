@@ -95,6 +95,67 @@ export default function FilmPage() {
     url?.includes('youtube.com/embed') ||
     url?.includes('player.mediadelivery.net')
 
+  function PlayerBox({ videoUrl, movie, isEmbed }: { videoUrl: string, movie: any, isEmbed: (url: string) => boolean }) {
+    const [started, setStarted] = useState(false)
+
+    if (!started) {
+      return (
+        <div
+          onClick={() => setStarted(true)}
+          style={{
+            marginTop: '28px', borderRadius: '10px', overflow: 'hidden',
+            background: '#000', width: '100%', maxWidth: '880px', aspectRatio: '16/9',
+            position: 'relative', cursor: 'pointer',
+          }}
+        >
+          {/* Thumbnail */}
+          {movie.backdrop_url || movie.poster_url ? (
+            <img
+              src={movie.backdrop_url || movie.poster_url}
+              alt={movie.title}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.7 }}
+            />
+          ) : (
+            <div style={{ width: '100%', height: '100%', background: '#111' }} />
+          )}
+          {/* Overlay */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <div style={{
+              width: '72px', height: '72px', borderRadius: '50%',
+              background: 'rgba(229,9,20,0.95)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 0 30px rgba(229,9,20,0.5)',
+              transition: 'transform 0.2s',
+            }}>
+              <div style={{ width: 0, height: 0, borderTop: '14px solid transparent', borderBottom: '14px solid transparent', borderLeft: '22px solid #fff', marginLeft: '5px' }} />
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div style={{ marginTop: '28px', borderRadius: '10px', overflow: 'hidden', background: '#000', width: '100%', maxWidth: '880px', aspectRatio: '16/9', position: 'relative' }}>
+        {isEmbed(videoUrl) ? (
+          <iframe
+            src={videoUrl}
+            style={{ width: '100%', height: '100%', border: 'none', position: 'absolute', inset: 0 }}
+            allowFullScreen
+            allow="autoplay; fullscreen; picture-in-picture"
+          />
+        ) : (
+          <video controls autoPlay style={{ width: '100%', height: '100%', display: 'block' }} src={videoUrl}>
+            {movie.subtitle_url && <track kind="subtitles" src={movie.subtitle_url} srcLang="sq" label="Shqip" default />}
+          </video>
+        )}
+      </div>
+    )
+  }
+
   if (showIntro) return <CinealIntro onComplete={handleIntroComplete} />
 
   if (loading) return (
@@ -179,20 +240,7 @@ export default function FilmPage() {
 
         {/* Player */}
         {videoUrl && playing && (
-          <div style={{ marginTop: '28px', borderRadius: '10px', overflow: 'hidden', background: '#000', width: '100%', maxWidth: '880px', aspectRatio: '16/9', position: 'relative' }}>
-            {isEmbed(videoUrl) ? (
-              <iframe
-                src={videoUrl}
-                style={{ width: '100%', height: '100%', border: 'none', position: 'absolute', inset: 0 }}
-                allowFullScreen
-                allow="autoplay; fullscreen; picture-in-picture"
-              />
-            ) : (
-              <video controls style={{ width: '100%', height: '100%', display: 'block' }} src={videoUrl}>
-                {movie.subtitle_url && <track kind="subtitles" src={movie.subtitle_url} srcLang="sq" label="Shqip" default />}
-              </video>
-            )}
-          </div>
+          <PlayerBox videoUrl={videoUrl} movie={movie} isEmbed={isEmbed} />
         )}
 
         <div style={{ marginTop: '20px', marginBottom: '40px' }}>
