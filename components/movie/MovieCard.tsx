@@ -54,8 +54,7 @@ export default function MovieCard({ movie }: { movie: any }) {
 
   return (
     <div style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', background: '#12121a', cursor: 'pointer' }}>
-      
-      {/* Ikonat ❤️ dhe + JASHTË link-ut — gjithmonë klikueshme */}
+
       {user && (
         <div style={{ position: 'absolute', bottom: '52px', right: '6px', display: 'flex', flexDirection: 'column', gap: '5px', zIndex: 10 }}>
           <button onClick={toggleFavorites}
@@ -71,7 +70,8 @@ export default function MovieCard({ movie }: { movie: any }) {
         </div>
       )}
 
-      <Link href={`/film/${movie.slug}`} style={{ textDecoration: 'none' }}>
+      {/* ← NDRYSHUAR: shton ?play=true */}
+      <Link href={`/film/${movie.slug}?play=true`} style={{ textDecoration: 'none' }}>
         <div style={{ position: 'relative', aspectRatio: '2/3', overflow: 'hidden' }}>
           <img src={movie.poster_url} alt={movie.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
 
@@ -81,7 +81,6 @@ export default function MovieCard({ movie }: { movie: any }) {
 
           <span style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.75)', color: '#f5a623', fontSize: '11px', fontWeight: 500, padding: '3px 7px', borderRadius: '3px' }}>★ {movie.rating}</span>
 
-          {/* Play overlay */}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)', opacity: 0, transition: 'opacity 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
             onMouseLeave={e => (e.currentTarget.style.opacity = '0')}>
@@ -105,7 +104,8 @@ export default function MovieCard({ movie }: { movie: any }) {
 
 export function TrendingCard({ movie, index }: { movie: any, index: number }) {
   return (
-    <Link href={`/film/${movie.slug}`} style={{ textDecoration: 'none' }}>
+    // ← NDRYSHUAR: shton ?play=true
+    <Link href={`/film/${movie.slug}?play=true`} style={{ textDecoration: 'none' }}>
       <div style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '16/9', cursor: 'pointer', background: '#12121a' }}>
         <img src={movie.backdrop_url || movie.poster_url} alt={movie.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }}
           onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.05)')}
