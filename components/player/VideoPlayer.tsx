@@ -1,21 +1,80 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Movie } from '@/lib/supabase'
 
 export default function VideoPlayer({ movie }: { movie: Movie }) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const trackRef = useRef<HTMLTrackElement>(null)
   const [playing, setPlaying] = useState(false)
   const [subtitleLang, setSubtitleLang] = useState<'sq' | 'en' | 'none'>('sq')
+  const [hlsLoaded, setHlsLoaded] = useState(false)
 
-  // Build embed URL with subtitle param if Bunny.net
-  const buildEmbedUrl = () => {
-    let url = movie.embed_url
-    if (!url) return ''
-    // Add subtitle track to Bunny.net player
-    if (url.includes('mediadelivery.net') && movie.subtitle_url && subtitleLang === 'sq') {
-      url += (url.includes('?') ? '&' : '?') + `captions=true`
+  // Load hls.js and attach to video
+  useEffect(() => {
+    if (!playing) return
+    const video = videoRef.current
+    if (!video || !movie.video_url) return
+
+    const isHls = movie.video_url.includes('.m3u8')
+
+    if (isHls) {
+      // Dynamically load hls.js
+      import('hls.js').then(({ default: Hls }) => {
+        if (Hls.isSupported()) {
+          const hls = new Hls()
+          hls.loadSource(movie.video_url!)
+          hls.attachMedia(video)
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            video.play()
+            setHlsLoaded(true)
+          })
+          // Cleanup
+          return () => hls.destroy()
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          // Safari native HLS
+          video.src = movie.video_url!
+          video.play()
+          setHlsLoaded(true)
+        }
+      })
+    } else {
+      video.src = movie.video_url!
+      video.play()
+      setHlsLoaded(true)
     }
-    return url
-  }
+  }, [playing, movie.video_url])
+
+  // Handle subtitle track changes
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    // Wait for video element to be ready
+    const applySubtitles = () => {
+      const tracks = video.textTracks
+      for (let i = 0; i < tracks.length; i++) {
+        tracks[i].mode = 'hidden'
+      }
+
+      if (subtitleLang === 'none') return
+
+      // Find and enable correct track
+      for (let i = 0; i < tracks.length; i++) {
+        if (subtitleLang === 'sq' && tracks[i].language === 'sq') {
+          tracks[i].mode = 'showing'
+          break
+        }
+        if (subtitleLang === 'en' && tracks[i].language === 'en') {
+          tracks[i].mode = 'showing'
+          break
+        }
+      }
+    }
+
+    applySubtitles()
+    video.addEventListener('loadedmetadata', applySubtitles)
+    return () => video.removeEventListener('loadedmetadata', applySubtitles)
+  }, [subtitleLang, hlsLoaded])
 
   return (
     <div style={{
@@ -26,8 +85,9 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
     }}>
       {/* Player */}
       <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
-        {!playing ? (
-          // Poster with play button
+
+        {/* Poster / Play button */}
+        {!playing && (
           <div
             style={{
               position: 'absolute', inset: 0,
@@ -39,22 +99,20 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
             }}
             onClick={() => setPlaying(true)}
           >
-            <div style={{
-              background: 'rgba(0,0,0,0.4)',
-              position: 'absolute', inset: 0,
-            }} />
-            <div style={{
-              position: 'relative', zIndex: 2,
-              width: '72px', height: '72px',
-              background: 'rgba(229,9,20,0.9)',
-              borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: '3px solid rgba(255,255,255,0.2)',
-              transition: 'transform 0.2s',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.08)')}
-            onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+            <div style={{ background: 'rgba(0,0,0,0.4)', position: 'absolute', inset: 0 }} />
+            <div
+              style={{
+                position: 'relative', zIndex: 2,
+                width: '72px', height: '72px',
+                background: 'rgba(229,9,20,0.9)',
+                borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '3px solid rgba(255,255,255,0.2)',
+                transition: 'transform 0.2s',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.08)')}
+              onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
             >
               <div style={{
                 width: 0, height: 0,
@@ -65,19 +123,31 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
               }} />
             </div>
           </div>
-        ) : (
-          // Actual iframe embed
-          <iframe
-            src={buildEmbedUrl()}
+        )}
+
+        {/* Video element with subtitle tracks */}
+        {playing && (
+          <video
+            ref={videoRef}
             style={{
               position: 'absolute', inset: 0,
               width: '100%', height: '100%',
-              border: 'none',
             }}
-            allowFullScreen
-            allow="autoplay; fullscreen"
-            title={movie.title}
-          />
+            controls
+            crossOrigin="anonymous"
+          >
+            {/* Shqip subtitles from Bunny Storage */}
+            {movie.subtitle_url && (
+              <track
+                ref={trackRef}
+                kind="subtitles"
+                src={movie.subtitle_url}
+                srcLang="sq"
+                label="Shqip"
+                default={subtitleLang === 'sq'}
+              />
+            )}
+          </video>
         )}
       </div>
 
