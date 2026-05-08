@@ -40,7 +40,7 @@ function parseVTT(content: string) {
   return blocks
 }
 
-function chunkBlocks(blocks: string[][], size = 80) {
+function chunkBlocks(blocks: string[][], size = 50) {
   const chunks: string[][][] = []
   for (let i = 0; i < blocks.length; i += size) {
     chunks.push(blocks.slice(i, i + size))
@@ -56,8 +56,8 @@ function isTimestamp(line: string) {
   return /\d{2}:\d{2}:\d{2}[.,]\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}[.,]\d{3}/.test(line)
 }
 
-// ─── OpenAI translate ────────────────────────────────────────────
-async function translateChunk(chunk: string, context: string, apiKey: string): Promise<string> {
+// ─── OpenAI translate me retry ───────────────────────────────────
+async function translateChunkOnce(chunk: string, context: string, apiKey: string): Promise<string> {
   const prompt = `Ti je përkthyes profesionist i titrave të filmit nga anglisht në shqip standarde. Ke përvojë të gjerë me filma dhe e njeh mirë kulturën shqiptare dhe angleze.
 
 KONTEKSTI I FILMIT: ${context}
@@ -128,6 +128,22 @@ ${chunk}`
   const data = await res.json()
   if (!res.ok) throw new Error(data.error?.message || 'OpenAI error')
   return data.choices[0]?.message?.content || ''
+}
+
+// Retry automatik — provo 3 herë nëse dështon
+async function translateChunk(chunk: string, context: string, apiKey: string, retries = 3): Promise<string> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const result = await translateChunkOnce(chunk, context, apiKey)
+      if (result.trim()) return result
+      throw new Error('Rezultat bosh')
+    } catch (e: any) {
+      if (attempt === retries) throw e
+      // Prit para riproces: 2s, 4s, 6s
+      await new Promise(r => setTimeout(r, attempt * 2000))
+    }
+  }
+  return chunk // Kthe origjinalin nëse dështon
 }
 
 export default function AdminPage() {
@@ -360,7 +376,7 @@ export default function AdminPage() {
       const headerBlocks = blocks.filter(b => b[0]?.trim() === 'WEBVTT' || b[0]?.startsWith('WEBVTT'))
       const contentBlocks = blocks.filter(b => !b[0]?.startsWith('WEBVTT'))
 
-      const chunks = chunkBlocks(contentBlocks, 80)
+      const chunks = chunkBlocks(contentBlocks, 50)
       setVttTotal(chunks.length)
       setVttStatus(`Duke ndarë në ${chunks.length} copa...`)
 
@@ -371,11 +387,17 @@ export default function AdminPage() {
         setVttStatus(`Duke përkthyer copën ${i + 1} nga ${chunks.length}...`)
 
         const chunkText = blocksToText(chunks[i])
-        const translated = await translateChunk(chunkText, vttContext, vttApiKey.trim())
-        translatedChunks.push(translated.trim())
+        try {
+          const translated = await translateChunk(chunkText, vttContext, vttApiKey.trim())
+          translatedChunks.push(translated.trim())
+        } catch (e: any) {
+          // Nëse copa dështon, ruaj origjinalin dhe vazhdo
+          translatedChunks.push(chunkText)
+          console.warn(`Copa ${i+1} dështoi, u ruajt origjinali:`, e.message)
+        }
 
-        // Pritje e vogël për të mos mbingarkuar API
-        if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 300))
+        // Pritje 500ms midis copave për të shmangur rate limit
+        if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 500))
       }
 
       const finalVtt = 'WEBVTT\n\n' + translatedChunks.join('\n\n')
