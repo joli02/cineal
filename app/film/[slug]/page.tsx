@@ -1,11 +1,58 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import CinealIntro from '@/components/CinealIntro'
+
+// HLS Player me titra
+function HLSPlayer({ videoUrl, subtitleUrl }: { videoUrl: string, subtitleUrl?: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      // Safari - suporton HLS natyrshëm
+      video.src = videoUrl
+    } else {
+      // Chrome/Firefox - duhet hls.js
+      const script = document.createElement('script')
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js'
+      script.onload = () => {
+        const Hls = (window as any).Hls
+        if (Hls.isSupported()) {
+          const hls = new Hls()
+          hls.loadSource(videoUrl)
+          hls.attachMedia(video)
+        }
+      }
+      document.head.appendChild(script)
+    }
+  }, [videoUrl])
+
+  return (
+    <video
+      ref={videoRef}
+      controls
+      style={{ width: '100%', height: '100%', display: 'block' }}
+      crossOrigin="anonymous"
+    >
+      {subtitleUrl && (
+        <track
+          kind="subtitles"
+          src={subtitleUrl}
+          srcLang="sq"
+          label="Shqip"
+          default
+        />
+      )}
+    </video>
+  )
+}
 
 export default function FilmPage() {
   const params = useParams()
@@ -19,7 +66,7 @@ export default function FilmPage() {
   const [inWatchlist, setInWatchlist] = useState(false)
   const [msg, setMsg] = useState('')
   const [similar, setSimilar] = useState<any[]>([])
-  const [showIntro, setShowIntro] = useState(autoPlay) // auto-start nëse ?play=true
+  const [showIntro, setShowIntro] = useState(autoPlay)
   const [playing, setPlaying] = useState(false)
 
   useEffect(() => {
@@ -80,9 +127,7 @@ export default function FilmPage() {
     )
   }
 
-  const handlePlay = () => {
-    setShowIntro(true)
-  }
+  const handlePlay = () => setShowIntro(true)
 
   const handleIntroComplete = () => {
     setShowIntro(false)
@@ -90,12 +135,14 @@ export default function FilmPage() {
     addToHistory()
   }
 
+  const isHLS = (url: string) => url?.includes('.m3u8')
+
   const isEmbed = (url: string) =>
     url?.includes('iframe.mediadelivery.net') ||
     url?.includes('youtube.com/embed') ||
     url?.includes('player.mediadelivery.net')
 
-  function PlayerBox({ videoUrl, movie, isEmbed }: { videoUrl: string, movie: any, isEmbed: (url: string) => boolean }) {
+  function PlayerBox({ videoUrl, movie }: { videoUrl: string, movie: any }) {
     const [started, setStarted] = useState(false)
 
     if (!started) {
@@ -108,8 +155,7 @@ export default function FilmPage() {
             position: 'relative', cursor: 'pointer',
           }}
         >
-          {/* Thumbnail */}
-          {movie.backdrop_url || movie.poster_url ? (
+          {(movie.backdrop_url || movie.poster_url) ? (
             <img
               src={movie.backdrop_url || movie.poster_url}
               alt={movie.title}
@@ -118,7 +164,6 @@ export default function FilmPage() {
           ) : (
             <div style={{ width: '100%', height: '100%', background: '#111' }} />
           )}
-          {/* Overlay */}
           <div style={{
             position: 'absolute', inset: 0,
             background: 'rgba(0,0,0,0.4)',
@@ -129,7 +174,6 @@ export default function FilmPage() {
               background: 'rgba(229,9,20,0.95)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 0 30px rgba(229,9,20,0.5)',
-              transition: 'transform 0.2s',
             }}>
               <div style={{ width: 0, height: 0, borderTop: '14px solid transparent', borderBottom: '14px solid transparent', borderLeft: '22px solid #fff', marginLeft: '5px' }} />
             </div>
@@ -140,7 +184,11 @@ export default function FilmPage() {
 
     return (
       <div style={{ marginTop: '28px', borderRadius: '10px', overflow: 'hidden', background: '#000', width: '100%', maxWidth: '880px', aspectRatio: '16/9', position: 'relative' }}>
-        {isEmbed(videoUrl) ? (
+        {isHLS(videoUrl) ? (
+          // HLS player me titra nga subtitle_url
+          <HLSPlayer videoUrl={videoUrl} subtitleUrl={movie.subtitle_url} />
+        ) : isEmbed(videoUrl) ? (
+          // Bunny iframe për filmat pa titra të veçanta
           <iframe
             src={videoUrl}
             style={{ width: '100%', height: '100%', border: 'none', position: 'absolute', inset: 0 }}
@@ -148,6 +196,7 @@ export default function FilmPage() {
             allow="autoplay; fullscreen; picture-in-picture"
           />
         ) : (
+          // Video HTML i zakonshëm
           <video controls autoPlay style={{ width: '100%', height: '100%', display: 'block' }} src={videoUrl}>
             {movie.subtitle_url && <track kind="subtitles" src={movie.subtitle_url} srcLang="sq" label="Shqip" default />}
           </video>
@@ -180,7 +229,6 @@ export default function FilmPage() {
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
-      {/* Backdrop */}
       <div style={{ position: 'relative', height: 'clamp(200px, 40vh, 400px)', overflow: 'hidden' }}>
         <div style={{
           position: 'absolute', inset: 0,
@@ -193,7 +241,6 @@ export default function FilmPage() {
 
       <div style={{ padding: '0 clamp(16px, 4vw, 60px) 60px', marginTop: 'clamp(-60px, -8vw, -100px)', position: 'relative', zIndex: 1 }}>
 
-        {/* Info */}
         <div style={{ display: 'flex', gap: 'clamp(16px, 3vw, 28px)', alignItems: 'flex-start', flexWrap: 'wrap' }}>
           {movie.poster_url && (
             <img src={movie.poster_url} alt={movie.title}
@@ -217,15 +264,8 @@ export default function FilmPage() {
 
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
               {videoUrl && (
-                <button
-                  onClick={handlePlay}
-                  style={{
-                    background: '#e50914', color: '#fff', border: 'none',
-                    padding: '11px 26px', borderRadius: '6px', fontSize: '14px',
-                    fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
-                    display: 'flex', alignItems: 'center', gap: '8px'
-                  }}
-                >
+                <button onClick={handlePlay}
+                  style={{ background: '#e50914', color: '#fff', border: 'none', padding: '11px 26px', borderRadius: '6px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '8px' }}>
                   ▶ Shiko Tani
                 </button>
               )}
@@ -238,16 +278,14 @@ export default function FilmPage() {
           </div>
         </div>
 
-        {/* Player */}
         {videoUrl && playing && (
-          <PlayerBox videoUrl={videoUrl} movie={movie} isEmbed={isEmbed} />
+          <PlayerBox videoUrl={videoUrl} movie={movie} />
         )}
 
         <div style={{ marginTop: '20px', marginBottom: '40px' }}>
           <Link href="/" style={{ color: '#e50914', textDecoration: 'none', fontSize: '14px' }}>← Kthehu te kryefaqja</Link>
         </div>
 
-        {/* Filma të Ngjashëm */}
         {similar.length > 0 && (
           <div>
             <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600, marginBottom: '16px' }}>
