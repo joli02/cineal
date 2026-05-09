@@ -3,7 +3,37 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Hls from 'hls.js'
 import { Movie } from '@/lib/supabase'
 
+// Detect Android TV / Smart TV browsers
+function isTVDevice(): boolean {
+  if (typeof window === 'undefined') return false
+  const ua = navigator.userAgent.toLowerCase()
+  return ua.includes('tv') || ua.includes('smarttv') || ua.includes('googletv') ||
+    ua.includes('androidtv') || ua.includes('hbbtv') || ua.includes('netcast') ||
+    (ua.includes('android') && !ua.includes('mobile') && !ua.includes('tablet'))
+}
+
 export default function VideoPlayer({ movie }: { movie: Movie }) {
+  const isTV = typeof window !== 'undefined' && isTVDevice()
+
+  // For TV devices use Bunny embed iframe directly
+  if (isTV && movie.embed_url) {
+    return (
+      <div style={{ background: '#0a0a0f', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
+          <iframe
+            src={movie.embed_url}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+            allowFullScreen
+            allow="autoplay; fullscreen"
+            title={movie.title}
+          />
+        </div>
+        <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', color: '#6b6b80' }}>
+          <span>HD 1080p</span>
+        </div>
+      </div>
+    )
+  }
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
