@@ -1,64 +1,15 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
-import { useParams, useSearchParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import VideoPlayer from '@/components/player/VideoPlayer'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import CinealIntro from '@/components/CinealIntro'
-
-// HLS Player me titra
-function HLSPlayer({ videoUrl, subtitleUrl }: { videoUrl: string, subtitleUrl?: string }) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      // Safari - suporton HLS natyrshëm
-      video.src = videoUrl
-    } else {
-      // Chrome/Firefox - duhet hls.js
-      const script = document.createElement('script')
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js'
-      script.onload = () => {
-        const Hls = (window as any).Hls
-        if (Hls.isSupported()) {
-          const hls = new Hls()
-          hls.loadSource(videoUrl)
-          hls.attachMedia(video)
-        }
-      }
-      document.head.appendChild(script)
-    }
-  }, [videoUrl])
-
-  return (
-    <video
-      ref={videoRef}
-      controls
-      style={{ width: '100%', height: '100%', display: 'block' }}
-      crossOrigin="anonymous"
-    >
-      {subtitleUrl && (
-        <track
-          kind="subtitles"
-          src={subtitleUrl}
-          srcLang="sq"
-          label="Shqip"
-          default
-        />
-      )}
-    </video>
-  )
-}
 
 export default function FilmPage() {
   const params = useParams()
-  const searchParams = useSearchParams()
   const slug = params?.slug as string
-  const autoPlay = searchParams.get('play') === 'true'
 
   const [movie, setMovie] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -66,7 +17,6 @@ export default function FilmPage() {
   const [inWatchlist, setInWatchlist] = useState(false)
   const [msg, setMsg] = useState('')
   const [similar, setSimilar] = useState<any[]>([])
-  const [showIntro, setShowIntro] = useState(autoPlay)
   const [playing, setPlaying] = useState(false)
 
   useEffect(() => {
@@ -87,12 +37,8 @@ export default function FilmPage() {
 
   async function fetchSimilar(genre: string, id: string) {
     const { data } = await supabase
-      .from('movies')
-      .select('*')
-      .eq('status', 'live')
-      .eq('genre', genre)
-      .neq('id', id)
-      .limit(6)
+      .from('movies').select('*').eq('status', 'live')
+      .eq('genre', genre).neq('id', id).limit(6)
     if (data) setSimilar(data)
   }
 
@@ -109,103 +55,24 @@ export default function FilmPage() {
     if (!user) { setMsg('Duhet të hysh!'); setTimeout(() => setMsg(''), 2000); return }
     if (inWatchlist) {
       await supabase.from('watchlist').delete().eq('user_id', user.id).eq('movie_id', movie.id)
-      setInWatchlist(false)
-      setMsg('U hoq nga watchlist!')
+      setInWatchlist(false); setMsg('U hoq nga watchlist!')
     } else {
       await supabase.from('watchlist').insert({ user_id: user.id, movie_id: movie.id })
-      setInWatchlist(true)
-      setMsg('U shtua te watchlist! ✓')
+      setInWatchlist(true); setMsg('U shtua te watchlist! ✓')
     }
     setTimeout(() => setMsg(''), 2500)
   }
 
-  const addToHistory = async () => {
-    if (!user || !movie) return
-    await supabase.from('watch_history').upsert(
-      { user_id: user.id, movie_id: movie.id, watched_at: new Date().toISOString() },
-      { onConflict: 'user_id,movie_id' }
-    )
-  }
-
-  const handlePlay = () => setShowIntro(true)
-
-  const handleIntroComplete = () => {
-    setShowIntro(false)
+  const handlePlay = async () => {
     setPlaying(true)
-    addToHistory()
-  }
-
-  const isHLS = (url: string) => url?.includes('.m3u8')
-
-  const isEmbed = (url: string) =>
-    url?.includes('iframe.mediadelivery.net') ||
-    url?.includes('youtube.com/embed') ||
-    url?.includes('player.mediadelivery.net')
-
-  function PlayerBox({ videoUrl, movie }: { videoUrl: string, movie: any }) {
-    const [started, setStarted] = useState(false)
-
-    if (!started) {
-      return (
-        <div
-          onClick={() => setStarted(true)}
-          style={{
-            marginTop: '28px', borderRadius: '10px', overflow: 'hidden',
-            background: '#000', width: '100%', maxWidth: '880px', aspectRatio: '16/9',
-            position: 'relative', cursor: 'pointer',
-          }}
-        >
-          {(movie.backdrop_url || movie.poster_url) ? (
-            <img
-              src={movie.backdrop_url || movie.poster_url}
-              alt={movie.title}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.7 }}
-            />
-          ) : (
-            <div style={{ width: '100%', height: '100%', background: '#111' }} />
-          )}
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'rgba(0,0,0,0.4)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <div style={{
-              width: '72px', height: '72px', borderRadius: '50%',
-              background: 'rgba(229,9,20,0.95)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 30px rgba(229,9,20,0.5)',
-            }}>
-              <div style={{ width: 0, height: 0, borderTop: '14px solid transparent', borderBottom: '14px solid transparent', borderLeft: '22px solid #fff', marginLeft: '5px' }} />
-            </div>
-          </div>
-        </div>
+    // Add to history
+    if (user && movie) {
+      await supabase.from('watch_history').upsert(
+        { user_id: user.id, movie_id: movie.id, watched_at: new Date().toISOString() },
+        { onConflict: 'user_id,movie_id' }
       )
     }
-
-    return (
-      <div style={{ marginTop: '28px', borderRadius: '10px', overflow: 'hidden', background: '#000', width: '100%', maxWidth: '880px', aspectRatio: '16/9', position: 'relative' }}>
-        {isHLS(videoUrl) ? (
-          // HLS player me titra nga subtitle_url
-          <HLSPlayer videoUrl={videoUrl} subtitleUrl={movie.subtitle_url} />
-        ) : isEmbed(videoUrl) ? (
-          // Bunny iframe për filmat pa titra të veçanta
-          <iframe
-            src={videoUrl}
-            style={{ width: '100%', height: '100%', border: 'none', position: 'absolute', inset: 0 }}
-            allowFullScreen
-            allow="autoplay; fullscreen; picture-in-picture"
-          />
-        ) : (
-          // Video HTML i zakonshëm
-          <video controls autoPlay style={{ width: '100%', height: '100%', display: 'block' }} src={videoUrl}>
-            {movie.subtitle_url && <track kind="subtitles" src={movie.subtitle_url} srcLang="sq" label="Shqip" default />}
-          </video>
-        )}
-      </div>
-    )
   }
-
-  if (showIntro) return <CinealIntro onComplete={handleIntroComplete} />
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b6b80' }}>
@@ -223,12 +90,11 @@ export default function FilmPage() {
     </div>
   )
 
-  const videoUrl = movie.video_url || movie.embed_url
-
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
+      {/* Hero backdrop */}
       <div style={{ position: 'relative', height: 'clamp(200px, 40vh, 400px)', overflow: 'hidden' }}>
         <div style={{
           position: 'absolute', inset: 0,
@@ -241,6 +107,7 @@ export default function FilmPage() {
 
       <div style={{ padding: '0 clamp(16px, 4vw, 60px) 60px', marginTop: 'clamp(-60px, -8vw, -100px)', position: 'relative', zIndex: 1 }}>
 
+        {/* Movie info */}
         <div style={{ display: 'flex', gap: 'clamp(16px, 3vw, 28px)', alignItems: 'flex-start', flexWrap: 'wrap' }}>
           {movie.poster_url && (
             <img src={movie.poster_url} alt={movie.title}
@@ -256,14 +123,14 @@ export default function FilmPage() {
               {movie.rating && <><span>•</span><span>⭐ {movie.rating}</span></>}
               {movie.duration && <><span>•</span><span>{movie.duration}</span></>}
             </div>
-            {movie.description && (
+            {movie.description_sq && (
               <p style={{ fontSize: '14px', color: '#b0b0c0', lineHeight: 1.7, maxWidth: '580px', marginBottom: '20px' }}>
-                {movie.description}
+                {movie.description_sq}
               </p>
             )}
 
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              {videoUrl && (
+              {(movie.video_url || movie.embed_url) && !playing && (
                 <button onClick={handlePlay}
                   style={{ background: '#e50914', color: '#fff', border: 'none', padding: '11px 26px', borderRadius: '6px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '8px' }}>
                   ▶ Shiko Tani
@@ -278,14 +145,18 @@ export default function FilmPage() {
           </div>
         </div>
 
-        {videoUrl && playing && (
-          <PlayerBox videoUrl={videoUrl} movie={movie} />
+        {/* Player — shown after 1 click */}
+        {playing && (movie.video_url || movie.embed_url) && (
+          <div style={{ marginTop: '28px', maxWidth: '880px' }}>
+            <VideoPlayer movie={movie} />
+          </div>
         )}
 
         <div style={{ marginTop: '20px', marginBottom: '40px' }}>
           <Link href="/" style={{ color: '#e50914', textDecoration: 'none', fontSize: '14px' }}>← Kthehu te kryefaqja</Link>
         </div>
 
+        {/* Similar movies */}
         {similar.length > 0 && (
           <div>
             <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600, marginBottom: '16px' }}>
@@ -295,11 +166,10 @@ export default function FilmPage() {
               {similar.map((m: any) => (
                 <Link key={m.id} href={`/film/${m.slug}`} style={{ textDecoration: 'none' }}>
                   <div style={{ borderRadius: '8px', overflow: 'hidden', background: '#12121a', cursor: 'pointer' }}>
-                    {m.poster_url ? (
-                      <img src={m.poster_url} alt={m.title} style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', display: 'block' }} />
-                    ) : (
-                      <div style={{ width: '100%', aspectRatio: '2/3', background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>🎬</div>
-                    )}
+                    {m.poster_url
+                      ? <img src={m.poster_url} alt={m.title} style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', display: 'block' }} />
+                      : <div style={{ width: '100%', aspectRatio: '2/3', background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>🎬</div>
+                    }
                     <div style={{ padding: '8px' }}>
                       <div style={{ fontSize: '12px', fontWeight: 500, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title}</div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
