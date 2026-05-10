@@ -3,6 +3,32 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Hls from 'hls.js'
 import { Movie } from '@/lib/supabase'
 
+// Convert SRT content to VTT blob URL
+function srtToVttUrl(srtText: string): string {
+  const vtt = 'WEBVTT\n\n' + srtText
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/^\uFEFF/, '') // Remove BOM
+    .replace(/^[\d]+\n(\d{2}:\d{2}:\d{2}),(\d{3})/gm, '$1.$2')
+    .replace(/(\d{2}:\d{2}:\d{2}),(\d{3}) --> (\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2 --> $3.$4')
+  const blob = new Blob([vtt], { type: 'text/vtt' })
+  return URL.createObjectURL(blob)
+}
+
+// Fetch subtitle file and convert if SRT
+async function loadSubtitleUrl(url: string): Promise<string> {
+  if (!url) return ''
+  if (!url.endsWith('.srt')) return url
+  try {
+    const res = await fetch(url)
+    const text = await res.text()
+    return srtToVttUrl(text)
+  } catch {
+    return url
+  }
+}
+
+
 // Detect Android TV / Smart TV browsers
 function isTVDevice(): boolean {
   if (typeof window === 'undefined') return false
@@ -48,6 +74,16 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
   const [muted, setMuted] = useState(false)
   const [subtitleLang, setSubtitleLang] = useState<'sq' | 'none'>('sq')
   const [buffered, setBuffered] = useState(0)
+  const [subtitleBlobUrl, setSubtitleBlobUrl] = useState<string>('')
+
+  // Load subtitle URL (convert SRT to VTT if needed)
+  useEffect(() => {
+    if (!started || !movie.subtitle_url) return
+    loadSubtitleUrl(movie.subtitle_url).then(url => setSubtitleBlobUrl(url))
+    return () => {
+      if (subtitleBlobUrl.startsWith('blob:')) URL.revokeObjectURL(subtitleBlobUrl)
+    }
+  }, [started, movie.subtitle_url])
 
   // Load hls.js
   useEffect(() => {
@@ -274,7 +310,7 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
             {movie.subtitle_url && (
               <track
                 kind="subtitles"
-                src={movie.subtitle_url}
+                src={subtitleBlobUrl || movie.subtitle_url}
                 srcLang="sq"
                 label="Shqip"
                 default={subtitleLang === 'sq'}
