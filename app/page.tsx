@@ -39,7 +39,7 @@ export default function HomePage() {
 
   const moviesByGenre = GENRES.map(genre => ({
     genre,
-    movies: movies.filter(m => m.genre === genre)
+    movies: movies.filter(m => m.genre === genre).slice(0, 10)
   })).filter(g => g.movies.length > 0)
 
   return (
@@ -61,7 +61,7 @@ export default function HomePage() {
           }} />
           <div style={{ position: 'relative', zIndex: 1, padding: 'clamp(60px, 10vw, 120px) clamp(20px, 5vw, 60px) 40px', maxWidth: '600px' }}>
             <div style={{ fontSize: '11px', color: '#e50914', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>
-              🔥 Film i Ri
+              Film i Ri
             </div>
             <h1 style={{ fontSize: 'clamp(24px, 5vw, 42px)', fontWeight: 700, lineHeight: 1.1, marginBottom: '12px' }}>
               {featured.title_sq || featured.title}
@@ -69,7 +69,7 @@ export default function HomePage() {
             <div style={{ display: 'flex', gap: '12px', fontSize: '13px', color: '#b0b0c0', marginBottom: '16px', flexWrap: 'wrap' }}>
               {featured.year && <span>{featured.year}</span>}
               {featured.genre && <><span>•</span><span>{featured.genre}</span></>}
-              {featured.rating && <><span>•</span><span>⭐ {featured.rating}</span></>}
+              {featured.rating && <><span>•</span><span>★ {featured.rating}</span></>}
               {featured.duration && <><span>•</span><span>{featured.duration}</span></>}
             </div>
             {featured.description && (
@@ -78,7 +78,6 @@ export default function HomePage() {
               </p>
             )}
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              {/* ← NDRYSHUAR: shton ?play=true */}
               <Link href={`/film/${featured.slug}?play=true`} style={{
                 background: '#e50914', color: '#fff', padding: '10px 24px',
                 borderRadius: '5px', textDecoration: 'none', fontWeight: 600, fontSize: '14px'
@@ -117,12 +116,15 @@ export default function HomePage() {
         {trending.length > 0 && (
           <div style={{ marginBottom: '40px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>🔥 TRENDING</h2>
+              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>TRENDING</h2>
               <Link href="/trending" style={{ fontSize: '13px', color: '#e50914', textDecoration: 'none' }}>Shiko të gjitha →</Link>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
+            {/* Desktop grid / Mobile scroll */}
+            <div className="category-scroll">
               {trending.map((m: any, i: number) => (
-                <TrendingCard key={m.id} movie={m} index={i} />
+                <div key={m.id} className="category-item-trending">
+                  <TrendingCard movie={m} index={i} />
+                </div>
               ))}
             </div>
           </div>
@@ -132,12 +134,14 @@ export default function HomePage() {
         {movies.length > 0 && (
           <div style={{ marginBottom: '40px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>🎬 Të Gjitha Filmat</h2>
+              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>Të Gjitha Filmat</h2>
               <Link href="/filma" style={{ fontSize: '13px', color: '#e50914', textDecoration: 'none' }}>Shiko të gjitha →</Link>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px', marginBottom: '40px' }}>
-              {movies.map((m: any) => (
-                <MovieCard key={m.id} movie={m} />
+            <div className="category-scroll">
+              {movies.slice(0, 10).map((m: any) => (
+                <div key={m.id} className="category-item">
+                  <MovieCard movie={m} />
+                </div>
               ))}
             </div>
           </div>
@@ -148,26 +152,18 @@ export default function HomePage() {
           <div key={genre} style={{ marginBottom: '40px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>
-                {genre === 'Aksion' && '💥'}
-                {genre === 'Drama' && '🎭'}
-                {genre === 'Sci-Fi' && '🚀'}
-                {genre === 'Thriller' && '😱'}
-                {genre === 'Horror' && '👻'}
-                {genre === 'Comedy' && '😂'}
-                {genre === 'Anime' && '⛩️'}
-                {genre === 'Romance' && '💕'}
-                {genre === 'Dokumentar' && '📽️'}
-                {genre === 'Seriale' && '📺'}
-                {' '}{genre}
+                {genre}
               </h2>
               <Link href={genre === 'Anime' ? '/anime' : genre === 'Seriale' ? '/seriale' : `/filma`}
                 style={{ fontSize: '13px', color: '#e50914', textDecoration: 'none' }}>
                 Shiko të gjitha →
               </Link>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
+            <div className="category-scroll">
               {gMovies.map((m: any) => (
-                <MovieCard key={m.id} movie={m} />
+                <div key={m.id} className="category-item">
+                  <MovieCard movie={m} />
+                </div>
               ))}
             </div>
           </div>
@@ -176,6 +172,48 @@ export default function HomePage() {
       </div>
 
       <Footer />
+
+      <style>{`
+        /* Desktop: grid normale */
+        .category-scroll {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+          gap: 12px;
+        }
+        .category-item-trending {
+          width: 100%;
+        }
+        .category-item {
+          width: 100%;
+        }
+
+        /* Mobile: scroll horizontal, 2 posterat visible */
+        @media (max-width: 768px) {
+          .category-scroll {
+            display: flex;
+            flex-direction: row;
+            overflow-x: auto;
+            gap: 10px;
+            padding-bottom: 8px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            grid-template-columns: unset;
+          }
+          .category-scroll::-webkit-scrollbar {
+            display: none;
+          }
+          .category-item {
+            flex: 0 0 calc(50% - 5px);
+            min-width: calc(50% - 5px);
+            scroll-snap-align: start;
+          }
+          .category-item-trending {
+            flex: 0 0 calc(80% - 5px);
+            min-width: calc(80% - 5px);
+            scroll-snap-align: start;
+          }
+        }
+      `}</style>
     </div>
   )
 }
