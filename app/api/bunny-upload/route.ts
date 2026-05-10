@@ -1,43 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Bunny Storage config
 const BUNNY_STORAGE_ZONE = 'cineal-subtitles'
-const BUNNY_CDN_URL = 'https://cinealsubtitles.b-cdn.net'
+const BUNNY_STORAGE_API_KEY = process.env.BUNNY_STORAGE_API_KEY || ''
+const BUNNY_CDN_URL = 'https://cineal-sub.b-cdn.net'
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const filename = req.nextUrl.searchParams.get('filename')
+    const filename = request.nextUrl.searchParams.get('filename')
     if (!filename) {
       return NextResponse.json({ error: 'Filename mungon' }, { status: 400 })
     }
 
-    const apiKey = process.env.BUNNY_STORAGE_KEY
-    if (!apiKey) {
-      return NextResponse.json({ error: 'BUNNY_STORAGE_KEY nuk është konfiguruar' }, { status: 500 })
+    if (!BUNNY_STORAGE_API_KEY) {
+      return NextResponse.json({ error: 'BUNNY_STORAGE_API_KEY nuk është konfiguruar' }, { status: 500 })
     }
 
-    const body = await req.arrayBuffer()
+    const body = await request.arrayBuffer()
 
-    const uploadRes = await fetch(
+    const bunnyRes = await fetch(
       `https://storage.bunnycdn.com/${BUNNY_STORAGE_ZONE}/${filename}`,
       {
         method: 'PUT',
         headers: {
-          'AccessKey': apiKey,
+          'AccessKey': BUNNY_STORAGE_API_KEY,
           'Content-Type': 'text/vtt',
         },
         body: body,
       }
     )
 
-    if (!uploadRes.ok) {
-      const err = await uploadRes.text()
-      return NextResponse.json({ error: `Bunny error: ${err}` }, { status: uploadRes.status })
+    if (!bunnyRes.ok) {
+      const errText = await bunnyRes.text()
+      return NextResponse.json({ error: `Bunny error: ${errText}` }, { status: 500 })
     }
 
-    const url = `${BUNNY_CDN_URL}/${filename}`
-    return NextResponse.json({ url, filename })
+    const cdnUrl = `${BUNNY_CDN_URL}/${filename}`
+    return NextResponse.json({ url: cdnUrl, success: true })
 
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Gabim i panjohur' }, { status: 500 })
   }
 }
