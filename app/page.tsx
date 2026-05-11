@@ -72,7 +72,7 @@ export default function HomePage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#262424', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
       {/* HERO */}
