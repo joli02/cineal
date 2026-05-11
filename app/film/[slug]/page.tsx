@@ -112,25 +112,29 @@ export default function FilmPage() {
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
-      {/* Hero — si home page me gradient nga e majta */}
+      {/* Hero — imazhi i plotë, zbehje nga e majta */}
       <div style={{ position: 'relative', height: 'clamp(300px, 55vh, 550px)', overflow: 'hidden' }}>
+        {/* Imazhi i plotë pa filter */}
         <div style={{
           position: 'absolute', inset: 0,
           backgroundImage: `url(${movie.backdrop_url || movie.poster_url})`,
-          backgroundSize: 'cover', backgroundPosition: 'center',
-          filter: 'brightness(0.15)'
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'brightness(1)',
         }} />
+        {/* Gradient nga e majta — errësohet aty ku është teksti */}
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'linear-gradient(to right, rgba(10,10,15,0.95) 35%, rgba(10,10,15,0.4) 70%, transparent 100%)'
+          background: 'linear-gradient(to right, rgba(10,10,15,0.98) 30%, rgba(10,10,15,0.7) 55%, rgba(10,10,15,0.2) 80%, transparent 100%)',
         }} />
+        {/* Gradient poshtë — kalon te background */}
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'linear-gradient(to top, #0a0a0f 0%, transparent 50%)'
+          background: 'linear-gradient(to top, #0a0a0f 0%, transparent 50%)',
         }} />
 
         {/* Info mbi hero */}
-        <div style={{ position: 'relative', zIndex: 1, padding: 'clamp(60px, 10vw, 100px) clamp(20px, 5vw, 60px) 40px', maxWidth: '620px' }}>
+        <div style={{ position: 'relative', zIndex: 1, padding: 'clamp(60px, 10vw, 100px) clamp(20px, 5vw, 60px) 40px', maxWidth: '580px' }}>
           <div style={{ fontSize: '11px', color: '#e50914', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>
             {movie.genre}
           </div>
@@ -143,8 +147,8 @@ export default function FilmPage() {
             {movie.duration && <><span>•</span><span>{movie.duration}</span></>}
           </div>
           {(movie.description_sq || movie.description) && (
-            <p style={{ fontSize: '14px', color: '#b0b0c0', lineHeight: 1.6, marginBottom: '24px', maxWidth: '500px' }}>
-              {(movie.description_sq || movie.description).substring(0, 180)}{(movie.description_sq || movie.description).length > 180 ? '...' : ''}
+            <p style={{ fontSize: '14px', color: '#b0b0c0', lineHeight: 1.6, marginBottom: '24px', maxWidth: '460px' }}>
+              {(movie.description_sq || movie.description).substring(0, 160)}{(movie.description_sq || movie.description).length > 160 ? '...' : ''}
             </p>
           )}
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
@@ -182,7 +186,7 @@ export default function FilmPage() {
                   <div style={{ borderRadius: '8px', overflow: 'hidden', background: '#12121a', cursor: 'pointer' }}>
                     {m.poster_url
                       ? <img src={m.poster_url} alt={m.title} style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', display: 'block' }} />
-                      : <div style={{ width: '100%', aspectRatio: '2/3', background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🎬</div>
+                      : <div style={{ width: '100%', aspectRatio: '2/3', background: '#1a1a2e' }} />
                     }
                     <div style={{ padding: '8px' }}>
                       <div style={{ fontSize: '12px', fontWeight: 500, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title}</div>
