@@ -63,7 +63,7 @@ export default function KidsPage() {
         }} />
 
         {/* Info mbi hero */}
-        <div style={{ position: 'relative', zIndex: 1, padding: 'clamp(60px, 10vw, 100px) clamp(20px, 5vw, 60px) 40px', maxWidth: '560px' }}>
+        <div style={{ position: 'relative', zIndex: 1, padding: 'clamp(120px, 18vw, 200px) clamp(20px, 5vw, 60px) 40px', maxWidth: '560px' }}>
           <h1 style={{ fontSize: 'clamp(36px, 6vw, 56px)', fontWeight: 700, marginBottom: '14px', lineHeight: 1.1 }}>
             Kids Zone
           </h1>
