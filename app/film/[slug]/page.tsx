@@ -113,7 +113,7 @@ export default function FilmPage() {
       <Navbar />
 
       {/* Hero — imazhi i plotë, zbehje nga e majta */}
-      <div style={{ position: 'relative', height: 'clamp(300px, 55vh, 550px)', overflow: 'hidden' }}>
+      <div style={{ position: 'relative', height: 'clamp(500px, 80vh, 800px)', overflow: 'hidden' }}>
         {/* Imazhi i plotë pa filter */}
         <div style={{
           position: 'absolute', inset: 0,
