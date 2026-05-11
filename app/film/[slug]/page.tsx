@@ -147,13 +147,14 @@ export default function FilmPage() {
         </div>
       </div>
 
-      <div style={{ padding: '0 clamp(16px, 4vw, 60px) 60px' }}>
+      {/* Content */}
+      <div style={{ padding: '28px clamp(16px, 4vw, 60px) 60px' }}>
 
-        {/* Player + Ad boxes */}
+        {/* Player + Ad boxes row */}
         {playing && (movie.video_url || movie.embed_url) && (
-          <div style={{ marginTop: '28px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', maxWidth: '1100px' }}>
 
-            {/* Player */}
+            {/* Player + njoftim */}
             <div style={{ flex: 1, minWidth: 0 }}>
               <VideoPlayer movie={movie} onTimeUpdate={handleTimeUpdate} startTime={savedTime} />
 
@@ -169,9 +170,9 @@ export default function FilmPage() {
               </div>
             </div>
 
-            {/* Ad column */}
+            {/* Ad boxes */}
             <div style={{ width: '240px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {/* Ad box 1 — i madh */}
+              {/* Ad box 1 */}
               <div style={{ background: '#12121a', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '10px', height: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5">
                   <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
@@ -180,7 +181,7 @@ export default function FilmPage() {
                 <span style={{ color: 'rgba(255,255,255,0.08)', fontSize: '10px' }}>240 × 200 px</span>
               </div>
 
-              {/* Ad box 2 — i vogël */}
+              {/* Ad box 2 */}
               <div style={{ background: '#12121a', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '10px', height: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                 <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '11px' }}>Hapësirë për reklamë</span>
                 <span style={{ color: 'rgba(255,255,255,0.08)', fontSize: '10px' }}>240 × 80 px</span>
