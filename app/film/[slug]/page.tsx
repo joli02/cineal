@@ -171,7 +171,7 @@ export default function FilmPage() {
             </div>
 
             {/* Ad column — stretch to fill player height */}
-            <div style={{ width: '320px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className="ad-col-desktop" style={{ width: '320px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {/* Ad box 1 — mbush hapësirën */}
               <div style={{
                 background: '#12121a', border: '1px dashed rgba(255,255,255,0.1)',
@@ -225,7 +225,13 @@ export default function FilmPage() {
           </div>
         )}
       </div>
-
+<style>{`
+  @media (max-width: 768px) {
+    .ad-col-desktop {
+      display: none !important;
+    }
+  }
+`}</style>
       <Footer />
     </div>
   )
