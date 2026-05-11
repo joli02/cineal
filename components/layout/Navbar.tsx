@@ -53,14 +53,14 @@ export default function Navbar() {
     router.push('/')
   }
 
-  const links = [
-    { href: '/', label: 'Home' },
-    { href: '/filma', label: 'Filma', hasDropdown: true },
-    { href: '/seriale', label: 'Seriale' },
-    { href: '/anime', label: 'Anime' },
-    { href: '/kids', label: 'Kids' },
-    { href: '/vip', label: 'VIP' },
-  ]
+  const handleFilmaEnter = () => {
+    if (filmaTimer.current) clearTimeout(filmaTimer.current)
+    setFilmaHover(true)
+  }
+
+  const handleFilmaLeave = () => {
+    filmaTimer.current = setTimeout(() => setFilmaHover(false), 200)
+  }
 
   const roleBadge: Record<string, string> = {
     free: '#6b6b80', vip: '#f5a623', premium: '#22c55e', moderator: '#3b82f6', admin: '#e50914'
@@ -73,14 +73,13 @@ export default function Navbar() {
     { href: '/settings', icon: '⚙️', label: 'Cilësimet' },
   ]
 
-  const handleFilmaEnter = () => {
-    if (filmaTimer.current) clearTimeout(filmaTimer.current)
-    setFilmaHover(true)
-  }
-
-  const handleFilmaLeave = () => {
-    filmaTimer.current = setTimeout(() => setFilmaHover(false), 200)
-  }
+  const links = [
+    { href: '/', label: 'Home' },
+    { href: '/seriale', label: 'Seriale' },
+    { href: '/anime', label: 'Anime' },
+    { href: '/kids', label: 'Kids' },
+    { href: '/vip', label: 'VIP' },
+  ]
 
   return (
     <>
@@ -91,40 +90,59 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Links */}
-        <ul className="desktop-nav" style={{ display: 'flex', gap: '28px', listStyle: 'none', margin: 0, padding: 0 }}>
-          {links.map(({ href, label, hasDropdown }) => (
-            <li key={href} style={{ position: 'relative' }}
-              onMouseEnter={hasDropdown ? handleFilmaEnter : undefined}
-              onMouseLeave={hasDropdown ? handleFilmaLeave : undefined}>
-              <Link href={href}
-                style={{ color: pathname === href ? '#fff' : '#b0b0c0', textDecoration: 'none', fontSize: '13px', fontWeight: pathname === href ? 500 : 400 }}
+        <ul className="desktop-nav" style={{ display: 'flex', gap: '28px', listStyle: 'none', margin: 0, padding: 0, alignItems: 'center' }}>
+
+          {/* Home */}
+          <li>
+            <Link href="/" style={{ color: pathname === '/' ? '#fff' : '#b0b0c0', textDecoration: 'none', fontSize: '13px', fontWeight: pathname === '/' ? 500 : 400 }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+              onMouseLeave={e => (e.currentTarget.style.color = pathname === '/' ? '#fff' : '#b0b0c0')}>
+              Home
+            </Link>
+          </li>
+
+          {/* Filma — dropdown only, no navigation */}
+          <li style={{ position: 'relative' }}
+            onMouseEnter={handleFilmaEnter}
+            onMouseLeave={handleFilmaLeave}>
+            <span style={{ color: '#b0b0c0', fontSize: '13px', cursor: 'default', userSelect: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              Filma
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </span>
+
+            {filmaHover && (
+              <div
+                onMouseEnter={handleFilmaEnter}
+                onMouseLeave={handleFilmaLeave}
+                style={{
+                  position: 'absolute', top: 'calc(100% + 12px)', left: '50%', transform: 'translateX(-50%)',
+                  background: '#12121a', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '10px', padding: '8px 0', minWidth: '180px',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.6)', zIndex: 200,
+                }}>
+                {FILM_CATEGORIES.map(cat => (
+                  <Link key={cat.href} href={cat.href}
+                    onClick={() => setFilmaHover(false)}
+                    style={{ display: 'block', padding: '9px 18px', fontSize: '13px', color: '#b0b0c0', textDecoration: 'none' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(229,9,20,0.08)'; e.currentTarget.style.color = '#fff' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#b0b0c0' }}>
+                    {cat.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </li>
+
+          {/* Other links */}
+          {links.filter(l => l.href !== '/').map(({ href, label }) => (
+            <li key={href}>
+              <Link href={href} style={{ color: pathname === href ? '#fff' : '#b0b0c0', textDecoration: 'none', fontSize: '13px', fontWeight: pathname === href ? 500 : 400 }}
                 onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
                 onMouseLeave={e => (e.currentTarget.style.color = pathname === href ? '#fff' : '#b0b0c0')}>
                 {label}
               </Link>
-
-              {/* Filma dropdown */}
-              {hasDropdown && filmaHover && (
-                <div
-                  onMouseEnter={handleFilmaEnter}
-                  onMouseLeave={handleFilmaLeave}
-                  style={{
-                    position: 'absolute', top: 'calc(100% + 12px)', left: '50%', transform: 'translateX(-50%)',
-                    background: '#12121a', border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '10px', padding: '8px 0', minWidth: '180px',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.6)', zIndex: 200,
-                  }}>
-                  {FILM_CATEGORIES.map(cat => (
-                    <Link key={cat.href} href={cat.href}
-                      onClick={() => setFilmaHover(false)}
-                      style={{ display: 'block', padding: '9px 18px', fontSize: '13px', color: '#b0b0c0', textDecoration: 'none' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(229,9,20,0.08)'; e.currentTarget.style.color = '#fff' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#b0b0c0' }}>
-                      {cat.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
             </li>
           ))}
         </ul>
@@ -207,20 +225,20 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {menuOpen && (
         <div style={{ position: 'fixed', top: '60px', left: 0, right: 0, bottom: 0, background: 'rgba(10,10,15,0.98)', zIndex: 99, padding: '20px', overflowY: 'auto' }}>
-          {links.map(({ href, label }) => (
-            <Link key={href} href={href} onClick={() => setMenuOpen(false)}
-              style={{ display: 'block', padding: '14px 0', fontSize: '18px', color: pathname === href ? '#e50914' : '#fff', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-              {label}
+          <Link href="/" onClick={() => setMenuOpen(false)} style={{ display: 'block', padding: '14px 0', fontSize: '18px', color: pathname === '/' ? '#e50914' : '#fff', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>Home</Link>
+          <div style={{ padding: '14px 0', fontSize: '18px', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>Filma</div>
+          {FILM_CATEGORIES.map(cat => (
+            <Link key={cat.href} href={cat.href} onClick={() => setMenuOpen(false)}
+              style={{ display: 'block', padding: '10px 0 10px 20px', fontSize: '14px', color: '#b0b0c0', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              {cat.label}
             </Link>
           ))}
-          <div style={{ marginTop: '8px' }}>
-            {FILM_CATEGORIES.map(cat => (
-              <Link key={cat.href} href={cat.href} onClick={() => setMenuOpen(false)}
-                style={{ display: 'block', padding: '10px 0 10px 16px', fontSize: '14px', color: '#b0b0c0', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                {cat.label}
-              </Link>
-            ))}
-          </div>
+          {['/seriale', '/anime', '/kids', '/vip'].map(href => (
+            <Link key={href} href={href} onClick={() => setMenuOpen(false)}
+              style={{ display: 'block', padding: '14px 0', fontSize: '18px', color: pathname === href ? '#e50914' : '#fff', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+              {href === '/seriale' ? 'Seriale' : href === '/anime' ? 'Anime' : href === '/kids' ? 'Kids' : 'VIP'}
+            </Link>
+          ))}
           {!user && (
             <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <Link href="/auth/login" onClick={() => setMenuOpen(false)} style={{ display: 'block', padding: '12px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: '#fff', textDecoration: 'none', fontSize: '15px' }}>Hyr</Link>
