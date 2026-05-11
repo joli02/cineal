@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
@@ -18,6 +18,7 @@ export default function FilmPage() {
   const [msg, setMsg] = useState('')
   const [similar, setSimilar] = useState<any[]>([])
   const [playing, setPlaying] = useState(false)
+  const [savedTime, setSavedTime] = useState(0)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -35,10 +36,23 @@ export default function FilmPage() {
     if (slug) fetchMovie()
   }, [slug])
 
+  // Load saved position
+  useEffect(() => {
+    if (!user || !movie) return
+    async function loadProgress() {
+      const { data } = await supabase
+        .from('watch_history')
+        .select('progress_seconds')
+        .eq('user_id', user.id)
+        .eq('movie_id', movie.id)
+        .maybeSingle()
+      if (data?.progress_seconds) setSavedTime(data.progress_seconds)
+    }
+    loadProgress()
+  }, [user, movie])
+
   async function fetchSimilar(genre: string, id: string) {
-    const { data } = await supabase
-      .from('movies').select('*').eq('status', 'live')
-      .eq('genre', genre).neq('id', id).limit(6)
+    const { data } = await supabase.from('movies').select('*').eq('status', 'live').eq('genre', genre).neq('id', id).limit(12)
     if (data) setSimilar(data)
   }
 
@@ -58,20 +72,38 @@ export default function FilmPage() {
       setInWatchlist(false); setMsg('U hoq nga watchlist!')
     } else {
       await supabase.from('watchlist').insert({ user_id: user.id, movie_id: movie.id })
-      setInWatchlist(true); setMsg('U shtua te watchlist! ✓')
+      setInWatchlist(true); setMsg('U shtua te watchlist!')
     }
     setTimeout(() => setMsg(''), 2500)
   }
 
   const handlePlay = async () => {
     setPlaying(true)
-    // Add to history
     if (user && movie) {
       await supabase.from('watch_history').upsert(
         { user_id: user.id, movie_id: movie.id, watched_at: new Date().toISOString() },
         { onConflict: 'user_id,movie_id' }
       )
     }
+  }
+
+  // Save progress every 10 seconds
+  const handleTimeUpdate = useCallback(async (time: number) => {
+    if (!user || !movie || time < 10) return
+    // Save only every 10s to avoid too many requests
+    if (Math.floor(time) % 10 === 0) {
+      await supabase.from('watch_history').upsert(
+        { user_id: user.id, movie_id: movie.id, progress_seconds: Math.floor(time), watched_at: new Date().toISOString() },
+        { onConflict: 'user_id,movie_id' }
+      )
+    }
+  }, [user, movie])
+
+  const formatProgress = (seconds: number) => {
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    if (h > 0) return `${h}h ${m}min`
+    return `${m} min`
   }
 
   if (loading) return (
@@ -83,9 +115,8 @@ export default function FilmPage() {
   if (!movie) return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', color: '#fff' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎬</div>
         <div style={{ fontSize: '18px', marginBottom: '8px' }}>Filmi nuk u gjet</div>
-        <Link href="/" style={{ color: '#e50914', textDecoration: 'none' }}>← Kthehu</Link>
+        <Link href="/" style={{ color: '#e50914', textDecoration: 'none' }}>Kthehu</Link>
       </div>
     </div>
   )
@@ -99,8 +130,7 @@ export default function FilmPage() {
         <div style={{
           position: 'absolute', inset: 0,
           backgroundImage: `url(${movie.backdrop_url || movie.poster_url})`,
-          backgroundSize: 'cover', backgroundPosition: 'center',
-          filter: 'brightness(0.3)'
+          backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(0.3)'
         }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0a0a0f 0%, transparent 60%)' }} />
       </div>
@@ -120,7 +150,7 @@ export default function FilmPage() {
             <div style={{ display: 'flex', gap: '10px', fontSize: '13px', color: '#b0b0c0', marginBottom: '12px', flexWrap: 'wrap' }}>
               {movie.year && <span>{movie.year}</span>}
               {movie.genre && <><span>•</span><span>{movie.genre}</span></>}
-              {movie.rating && <><span>•</span><span>⭐ {movie.rating}</span></>}
+              {movie.rating && <><span>•</span><span>★ {movie.rating}</span></>}
               {movie.duration && <><span>•</span><span>{movie.duration}</span></>}
             </div>
             {movie.description_sq && (
@@ -133,7 +163,7 @@ export default function FilmPage() {
               {(movie.video_url || movie.embed_url) && !playing && (
                 <button onClick={handlePlay}
                   style={{ background: '#e50914', color: '#fff', border: 'none', padding: '11px 26px', borderRadius: '6px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  ▶ Shiko Tani
+                  {savedTime > 30 ? `Vazhdo nga ${formatProgress(savedTime)}` : '▶ Shiko Tani'}
                 </button>
               )}
               <button onClick={toggleWatchlist}
@@ -145,22 +175,18 @@ export default function FilmPage() {
           </div>
         </div>
 
-        {/* Player — shown after 1 click */}
+        {/* Player */}
         {playing && (movie.video_url || movie.embed_url) && (
-          <div style={{ marginTop: '28px', maxWidth: '880px' }}>
-            <VideoPlayer movie={movie} />
+          <div style={{ marginTop: '28px', maxWidth: '960px' }}>
+            <VideoPlayer movie={movie} onTimeUpdate={handleTimeUpdate} />
           </div>
         )}
 
-        <div style={{ marginTop: '20px', marginBottom: '40px' }}>
-          <Link href="/" style={{ color: '#e50914', textDecoration: 'none', fontSize: '14px' }}>← Kthehu te kryefaqja</Link>
-        </div>
-
-        {/* Similar movies */}
+        {/* Similar movies — right below player */}
         {similar.length > 0 && (
-          <div>
+          <div style={{ marginTop: '40px' }}>
             <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600, marginBottom: '16px' }}>
-              Filma të Ngjashëm — {movie.genre}
+              Filma të Ngjashëm
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px' }}>
               {similar.map((m: any) => (
@@ -174,7 +200,7 @@ export default function FilmPage() {
                       <div style={{ fontSize: '12px', fontWeight: 500, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title}</div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
                         <span style={{ fontSize: '11px', color: '#6b6b80' }}>{m.year}</span>
-                        {m.rating && <span style={{ fontSize: '11px', color: '#f5a623' }}>⭐ {m.rating}</span>}
+                        {m.rating && <span style={{ fontSize: '11px', color: '#f5a623' }}>★ {m.rating}</span>}
                       </div>
                     </div>
                   </div>
