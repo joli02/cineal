@@ -157,7 +157,12 @@ export default function FilmPage() {
             {/* Player + njoftim */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <VideoPlayer movie={movie} onTimeUpdate={handleTimeUpdate} startTime={savedTime} />
-
+{/* Mobile ad box — vetëm mobile */}
+<div className="mobile-ad-box">
+  <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '11px' }}>Hapësirë për reklamë</span>
+</div>
+{/* Njoftim poshtë playerit */}
+<div style={{ marginTop: '10px', background: '#12121a'...
               {/* Njoftim poshtë playerit */}
               <div style={{ marginTop: '10px', background: '#12121a', border: '1px solid rgba(229,9,20,0.2)', borderRadius: '8px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
                 <p style={{ color: '#b0b0c0', fontSize: '12px', margin: 0, lineHeight: 1.5 }}>
@@ -232,6 +237,23 @@ export default function FilmPage() {
     }
   }
 `}</style>
+      @media (max-width: 768px) {
+  .ad-col-desktop { display: none !important; }
+  .mobile-ad-box {
+    display: flex !important;
+    width: 50%;
+    height: 55px;
+    background: #12121a;
+    border: 1px dashed rgba(255,255,255,0.1);
+    border-radius: 8px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+  }
+}
+@media (min-width: 769px) {
+  .mobile-ad-box { display: none !important; }
+}
       <Footer />
     </div>
   )
