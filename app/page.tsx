@@ -77,7 +77,7 @@ export default function HomePage() {
 
       {/* HERO — si faqja e filmit */}
       {featured && (
-        <div style={{ position: 'relative', height: 'clamp(380px, 65vh, 650px)', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', height: 'clamp(500px, 80vh, 800px)', overflow: 'hidden' }}>
           {/* Imazhi i plotë */}
           <div style={{
             position: 'absolute', inset: 0,
