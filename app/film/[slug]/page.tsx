@@ -152,7 +152,7 @@ export default function FilmPage() {
 
         {/* Player + Ad boxes */}
         {playing && (movie.video_url || movie.embed_url) && (
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'stretch', maxWidth: '1100px' }}>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'stretch', maxWidth: '100%' }}>
 
             {/* Player + njoftim */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
@@ -171,7 +171,7 @@ export default function FilmPage() {
             </div>
 
             {/* Ad column — stretch to fill player height */}
-            <div style={{ width: '240px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ width: '320px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {/* Ad box 1 — mbush hapësirën */}
               <div style={{
                 background: '#12121a', border: '1px dashed rgba(255,255,255,0.1)',
