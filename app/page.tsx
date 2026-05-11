@@ -75,19 +75,34 @@ export default function HomePage() {
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
-      {/* HERO */}
+      {/* HERO — si faqja e filmit */}
       {featured && (
-        <div style={{ position: 'relative', height: 'clamp(300px, 60vh, 600px)', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', height: 'clamp(380px, 65vh, 650px)', overflow: 'hidden' }}>
+          {/* Imazhi i plotë */}
           <div style={{
             position: 'absolute', inset: 0,
             backgroundImage: `url(${featured.backdrop_url || featured.poster_url})`,
-            backgroundSize: 'cover', backgroundPosition: 'center',
-            filter: 'brightness(0.4)'
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            filter: 'brightness(1)',
           }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(38,36,36,0.95) 40%, transparent 100%)' }} />
-          <div style={{ position: 'relative', zIndex: 1, padding: 'clamp(60px, 10vw, 120px) clamp(20px, 5vw, 60px) 40px', maxWidth: '600px' }}>
-            <div style={{ fontSize: '11px', color: '#e50914', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>Film i Ri</div>
-            <h1 style={{ fontSize: 'clamp(24px, 5vw, 42px)', fontWeight: 700, lineHeight: 1.1, marginBottom: '12px' }}>
+          {/* Gradient nga e majta */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(to right, rgba(10,10,15,0.98) 30%, rgba(10,10,15,0.7) 55%, rgba(10,10,15,0.2) 80%, transparent 100%)',
+          }} />
+          {/* Gradient poshtë */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(to top, #0a0a0f 0%, transparent 50%)',
+          }} />
+
+          {/* Info */}
+          <div style={{ position: 'relative', zIndex: 1, padding: 'clamp(80px, 12vw, 140px) clamp(20px, 5vw, 60px) 40px', maxWidth: '580px' }}>
+            <div style={{ fontSize: '11px', color: '#e50914', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>
+              Film i Ri
+            </div>
+            <h1 style={{ fontSize: 'clamp(28px, 5vw, 48px)', fontWeight: 700, lineHeight: 1.1, marginBottom: '12px' }}>
               {featured.title_sq || featured.title}
             </h1>
             <div style={{ display: 'flex', gap: '12px', fontSize: '13px', color: '#b0b0c0', marginBottom: '16px', flexWrap: 'wrap' }}>
@@ -97,15 +112,15 @@ export default function HomePage() {
               {featured.duration && <><span>•</span><span>{featured.duration}</span></>}
             </div>
             {featured.description && (
-              <p style={{ fontSize: '14px', color: '#b0b0c0', lineHeight: 1.6, marginBottom: '24px', maxWidth: '500px' }}>
-                {featured.description}
+              <p style={{ fontSize: '14px', color: '#b0b0c0', lineHeight: 1.6, marginBottom: '24px', maxWidth: '460px' }}>
+                {featured.description.substring(0, 160)}{featured.description.length > 160 ? '...' : ''}
               </p>
             )}
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <Link href={`/film/${featured.slug}?play=true`} style={{ background: '#e50914', color: '#fff', padding: '10px 24px', borderRadius: '5px', textDecoration: 'none', fontWeight: 600, fontSize: '14px' }}>
+              <Link href={`/film/${featured.slug}?play=true`} style={{ background: '#e50914', color: '#fff', padding: '11px 26px', borderRadius: '6px', textDecoration: 'none', fontWeight: 600, fontSize: '14px' }}>
                 ▶ Shiko Tani
               </Link>
-              <Link href={`/film/${featured.slug}`} style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '10px 24px', borderRadius: '5px', textDecoration: 'none', fontWeight: 500, fontSize: '14px', border: '1px solid rgba(255,255,255,0.15)' }}>
+              <Link href={`/film/${featured.slug}`} style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '11px 24px', borderRadius: '6px', textDecoration: 'none', fontWeight: 500, fontSize: '14px', border: '1px solid rgba(255,255,255,0.15)' }}>
                 + Më Shumë
               </Link>
             </div>
@@ -120,27 +135,22 @@ export default function HomePage() {
         {/* CONTINUE WATCHING */}
         {user && continueWatching.length > 0 && (
           <div style={{ marginBottom: '40px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>Vazhdo Shikimin</h2>
-            </div>
+            <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600, marginBottom: '16px' }}>Vazhdo Shikimin</h2>
             <div className="category-scroll">
               {continueWatching.map((m: any) => (
                 <div key={m.id} className="category-item">
                   <Link href={`/film/${m.slug}?play=true`} style={{ textDecoration: 'none' }}>
-                    <div style={{ borderRadius: '8px', overflow: 'hidden', background: '#1a1818', cursor: 'pointer', position: 'relative' }}>
+                    <div style={{ borderRadius: '8px', overflow: 'hidden', background: '#12121a', cursor: 'pointer', position: 'relative' }}>
                       {m.poster_url
                         ? <img src={m.poster_url} alt={m.title} style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', display: 'block' }} />
-                        : <div style={{ width: '100%', aspectRatio: '2/3', background: '#2a2020' }} />
+                        : <div style={{ width: '100%', aspectRatio: '2/3', background: '#1a1a2e' }} />
                       }
-                      {/* Progress bar */}
-                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '3px', background: 'rgba(255,255,255,0.2)' }}>
-                        <div style={{ height: '100%', background: '#e50914', width: `${Math.min(100, (m.progress_seconds / (m.duration_seconds || 7200)) * 100)}%` }} />
+                      <div style={{ position: 'absolute', bottom: 42, left: 0, right: 0, height: '3px', background: 'rgba(255,255,255,0.2)' }}>
+                        <div style={{ height: '100%', background: '#e50914', width: `${Math.min(100, (m.progress_seconds / 7200) * 100)}%` }} />
                       </div>
                       <div style={{ padding: '8px' }}>
                         <div style={{ fontSize: '12px', fontWeight: 500, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title_sq || m.title}</div>
-                        <div style={{ fontSize: '11px', color: '#e50914', marginTop: '2px' }}>
-                          Nga {formatProgress(m.progress_seconds)}
-                        </div>
+                        <div style={{ fontSize: '11px', color: '#e50914', marginTop: '2px' }}>Nga {formatProgress(m.progress_seconds)}</div>
                       </div>
                     </div>
                   </Link>
@@ -153,9 +163,7 @@ export default function HomePage() {
         {/* TRENDING */}
         {trending.length > 0 && (
           <div style={{ marginBottom: '40px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>Trending</h2>
-            </div>
+            <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600, marginBottom: '16px' }}>Trending</h2>
             <div className="category-scroll">
               {trending.map((m: any, i: number) => (
                 <div key={m.id} className="category-item-trending">
