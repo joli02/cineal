@@ -1,4 +1,6 @@
 'use client'
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
@@ -19,9 +21,7 @@ function FilmaContent() {
   useEffect(() => {
     async function fetchMovies() {
       const { data } = await supabase
-        .from('movies')
-        .select('*')
-        .eq('status', 'live')
+        .from('movies').select('*').eq('status', 'live')
         .order('created_at', { ascending: false })
       if (data) setMovies(data)
       setLoading(false)
@@ -52,19 +52,16 @@ function FilmaContent() {
         </select>
       </div>
 
-      {/* Search */}
       <div style={{ position: 'relative', marginBottom: '14px' }}>
         <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#6b6b80' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
         </span>
-        <input value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Kërko filma..."
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Kërko filma..."
           style={{ width: '100%', background: '#12121a', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', padding: '10px 16px 10px 44px', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const }} />
       </div>
 
-      {/* Genre filter */}
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
         <button onClick={() => setGenre('')}
           style={{ background: !genre ? '#e50914' : 'rgba(255,255,255,0.05)', border: !genre ? '1px solid #e50914' : '1px solid rgba(255,255,255,0.08)', color: !genre ? '#fff' : '#b0b0c0', padding: '6px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer' }}>
