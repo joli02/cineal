@@ -20,12 +20,16 @@ const FILM_CATEGORIES = [
 export default function Navbar() {
   const [search, setSearch] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searching, setSearching] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [filmaHover, setFilmaHover] = useState(false)
   const filmaTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const searchRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
   const router = useRouter()
 
@@ -41,6 +45,35 @@ export default function Navbar() {
     })
     return () => subscription.unsubscribe()
   }, [])
+
+  // Close search dropdown when clicking outside
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSearchResults([])
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  // Live search
+  useEffect(() => {
+    if (!search.trim() || search.length < 2) { setSearchResults([]); return }
+    if (searchTimer.current) clearTimeout(searchTimer.current)
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true)
+      const { data } = await supabase
+        .from('movies')
+        .select('id, title, title_sq, slug, poster_url, year, genre')
+        .eq('status', 'live')
+        .ilike('title', `%${search}%`)
+        .limit(5)
+      setSearchResults(data || [])
+      setSearching(false)
+    }, 300)
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current) }
+  }, [search])
 
   async function fetchProfile(userId: string) {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
@@ -62,6 +95,21 @@ export default function Navbar() {
     filmaTimer.current = setTimeout(() => setFilmaHover(false), 200)
   }
 
+  const handleSearchSelect = (slug: string) => {
+    setSearch('')
+    setSearchResults([])
+    setSearchOpen(false)
+    router.push(`/film/${slug}`)
+  }
+
+  const handleSearchSubmit = () => {
+    if (!search.trim()) return
+    setSearchResults([])
+    setSearchOpen(false)
+    router.push(`/filma?kerko=${encodeURIComponent(search)}`)
+    setSearch('')
+  }
+
   const roleBadge: Record<string, string> = {
     free: '#6b6b80', vip: '#f5a623', premium: '#22c55e', moderator: '#3b82f6', admin: '#e50914'
   }
@@ -73,7 +121,6 @@ export default function Navbar() {
     { href: '/settings', icon: '⚙️', label: 'Cilësimet' },
   ]
 
-  // Avatar based on gender
   const avatarSrc = profile?.gender === 'female' ? '/female_icon.svg' : '/male_icon.svg'
 
   return (
@@ -86,7 +133,6 @@ export default function Navbar() {
 
         {/* Desktop Links */}
         <ul className="desktop-nav" style={{ display: 'flex', gap: '28px', listStyle: 'none', margin: 0, padding: 0, alignItems: 'center' }}>
-
           <li>
             <Link href="/" style={{ color: pathname === '/' ? '#fff' : '#b0b0c0', textDecoration: 'none', fontSize: '13px', fontWeight: pathname === '/' ? 500 : 400 }}
               onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
@@ -95,21 +141,20 @@ export default function Navbar() {
             </Link>
           </li>
 
-          {/* Filma — dropdown only, no navigation, no arrow */}
+          {/* Filma — dropdown only */}
           <li style={{ position: 'relative' }}
             onMouseEnter={handleFilmaEnter}
             onMouseLeave={handleFilmaLeave}>
             <span style={{ color: '#b0b0c0', fontSize: '13px', cursor: 'default', userSelect: 'none' }}>
               Filma
             </span>
-
             {filmaHover && (
               <div
                 onMouseEnter={handleFilmaEnter}
                 onMouseLeave={handleFilmaLeave}
                 style={{
                   position: 'absolute', top: 'calc(100% + 12px)', left: '50%', transform: 'translateX(-50%)',
-                  background: '#1a1818', border: '1px solid rgba(255,255,255,0.1)',
+                  background: '#12121a', border: '1px solid rgba(255,255,255,0.1)',
                   borderRadius: '10px', padding: '8px 0', minWidth: '180px',
                   boxShadow: '0 8px 32px rgba(0,0,0,0.6)', zIndex: 200,
                 }}>
@@ -143,32 +188,91 @@ export default function Navbar() {
         </ul>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          {searchOpen ? (
-            <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && search) { router.push(`/filma?kerko=${encodeURIComponent(search)}`); setSearchOpen(false); setSearch('') }
-                if (e.key === 'Escape') setSearchOpen(false)
-              }}
-              placeholder="Kërko filma..."
-              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '7px 14px', borderRadius: '4px', fontSize: '13px', outline: 'none', width: '200px' }} />
-          ) : (
-            <button onClick={() => setSearchOpen(true)}
-              style={{ background: 'transparent', border: 'none', color: '#b0b0c0', cursor: 'pointer', padding: '6px', display: 'flex' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-            </button>
-          )}
+
+          {/* Search me dropdown live */}
+          <div ref={searchRef} style={{ position: 'relative' }}>
+            {searchOpen ? (
+              <div style={{ position: 'relative' }}>
+                <input
+                  autoFocus
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') handleSearchSubmit()
+                    if (e.key === 'Escape') { setSearchOpen(false); setSearch(''); setSearchResults([]) }
+                  }}
+                  placeholder="Kërko filma..."
+                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '7px 14px', borderRadius: '4px', fontSize: '13px', outline: 'none', width: '220px' }}
+                />
+
+                {/* Dropdown rezultate */}
+                {searchResults.length > 0 && (
+                  <div style={{
+                    position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
+                    background: '#12121a', border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px', overflow: 'hidden',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.6)', zIndex: 300,
+                  }}>
+                    {searchResults.map((m, i) => (
+                      <div
+                        key={m.id}
+                        onClick={() => handleSearchSelect(m.slug)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '10px',
+                          padding: '10px 14px', cursor: 'pointer',
+                          borderBottom: i < searchResults.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(229,9,20,0.08)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        {m.poster_url
+                          ? <img src={m.poster_url} alt={m.title} style={{ width: '28px', height: '40px', objectFit: 'cover', borderRadius: '3px', flexShrink: 0 }} />
+                          : <div style={{ width: '28px', height: '40px', background: '#1a1a2e', borderRadius: '3px', flexShrink: 0 }} />
+                        }
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 500, color: '#fff' }}>{m.title_sq || m.title}</div>
+                          <div style={{ fontSize: '11px', color: '#6b6b80' }}>{m.year} · {m.genre}</div>
+                        </div>
+                      </div>
+                    ))}
+                    {/* Shiko të gjitha */}
+                    <div
+                      onClick={handleSearchSubmit}
+                      style={{ padding: '10px 14px', fontSize: '12px', color: '#e50914', cursor: 'pointer', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.06)' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(229,9,20,0.06)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      Shiko të gjitha rezultatet →
+                    </div>
+                  </div>
+                )}
+
+                {/* Loading */}
+                {searching && search.length >= 2 && searchResults.length === 0 && (
+                  <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: '#12121a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '14px', textAlign: 'center', fontSize: '12px', color: '#6b6b80' }}>
+                    Duke kërkuar...
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button onClick={() => setSearchOpen(true)}
+                style={{ background: 'transparent', border: 'none', color: '#b0b0c0', cursor: 'pointer', padding: '6px', display: 'flex' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </button>
+            )}
+          </div>
 
           {user ? (
             <div style={{ position: 'relative' }}>
               <div onClick={() => setDropdownOpen(!dropdownOpen)}
-                style={{ width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', border: '2px solid rgba(229,9,20,0.5)', cursor: 'pointer', background: '#262424' }}>
+                style={{ width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', border: '2px solid rgba(229,9,20,0.5)', cursor: 'pointer', background: '#0a0a0f' }}>
                 <img src={avatarSrc} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
 
               {dropdownOpen && (
-                <div style={{ position: 'absolute', right: 0, top: '44px', background: '#1a1818', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '8px', minWidth: '220px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 999 }}>
+                <div style={{ position: 'absolute', right: 0, top: '44px', background: '#12121a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '8px', minWidth: '220px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 999 }}>
                   <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <img src={avatarSrc} alt="Avatar" style={{ width: '36px', height: '36px', borderRadius: '50%', border: '2px solid rgba(229,9,20,0.4)' }} />
                     <div>
@@ -224,7 +328,7 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div style={{ position: 'fixed', top: '60px', left: 0, right: 0, bottom: 0, background: 'rgba(38,36,36,0.98)', zIndex: 99, padding: '20px', overflowY: 'auto' }}>
+        <div style={{ position: 'fixed', top: '60px', left: 0, right: 0, bottom: 0, background: 'rgba(10,10,15,0.98)', zIndex: 99, padding: '20px', overflowY: 'auto' }}>
           <Link href="/" onClick={() => setMenuOpen(false)} style={{ display: 'block', padding: '14px 0', fontSize: '18px', color: pathname === '/' ? '#e50914' : '#fff', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>Home</Link>
           <div style={{ padding: '14px 0', fontSize: '18px', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>Filma</div>
           {FILM_CATEGORIES.map(cat => (
