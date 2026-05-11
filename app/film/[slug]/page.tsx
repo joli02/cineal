@@ -112,29 +112,15 @@ export default function FilmPage() {
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
+      {/* Hero */}
       <div style={{ position: 'relative', height: 'clamp(500px, 80vh, 800px)', overflow: 'hidden' }}>
-        <div style={{
-          position: 'absolute', inset: 0,
-          backgroundImage: `url(${movie.backdrop_url || movie.poster_url})`,
-          backgroundSize: 'cover', backgroundPosition: 'center',
-          filter: 'brightness(1)',
-        }} />
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'linear-gradient(to right, rgba(10,10,15,0.98) 30%, rgba(10,10,15,0.7) 55%, rgba(10,10,15,0.2) 80%, transparent 100%)',
-        }} />
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'linear-gradient(to top, #0a0a0f 0%, transparent 50%)',
-        }} />
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${movie.backdrop_url || movie.poster_url})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(1)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(10,10,15,0.98) 30%, rgba(10,10,15,0.7) 55%, rgba(10,10,15,0.2) 80%, transparent 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0a0a0f 0%, transparent 50%)' }} />
 
         <div style={{ position: 'relative', zIndex: 1, padding: 'clamp(60px, 10vw, 100px) clamp(20px, 5vw, 60px) 40px', maxWidth: '580px' }}>
-          <div style={{ fontSize: '11px', color: '#e50914', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>
-            {movie.genre}
-          </div>
-          <h1 style={{ fontSize: 'clamp(24px, 5vw, 42px)', fontWeight: 700, lineHeight: 1.1, marginBottom: '12px' }}>
-            {movie.title_sq || movie.title}
-          </h1>
+          <div style={{ fontSize: '11px', color: '#e50914', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>{movie.genre}</div>
+          <h1 style={{ fontSize: 'clamp(24px, 5vw, 42px)', fontWeight: 700, lineHeight: 1.1, marginBottom: '12px' }}>{movie.title_sq || movie.title}</h1>
           <div style={{ display: 'flex', gap: '12px', fontSize: '13px', color: '#b0b0c0', marginBottom: '16px', flexWrap: 'wrap' }}>
             {movie.year && <span>{movie.year}</span>}
             {movie.rating && <><span>•</span><span>★ {movie.rating}</span></>}
@@ -162,13 +148,48 @@ export default function FilmPage() {
       </div>
 
       <div style={{ padding: '0 clamp(16px, 4vw, 60px) 60px' }}>
+
+        {/* Player + Ad boxes */}
         {playing && (movie.video_url || movie.embed_url) && (
-          <div style={{ marginTop: '28px', maxWidth: '960px' }}>
-            {/* Kalon savedTime te VideoPlayer */}
-            <VideoPlayer movie={movie} onTimeUpdate={handleTimeUpdate} startTime={savedTime} />
+          <div style={{ marginTop: '28px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+
+            {/* Player */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <VideoPlayer movie={movie} onTimeUpdate={handleTimeUpdate} startTime={savedTime} />
+
+              {/* Njoftim poshtë playerit */}
+              <div style={{ marginTop: '10px', background: '#12121a', border: '1px solid rgba(229,9,20,0.2)', borderRadius: '8px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+                <p style={{ color: '#b0b0c0', fontSize: '12px', margin: 0, lineHeight: 1.5 }}>
+                  Dëshiron të reklamosh biznesin tënd te mijëra shikues shqiptarë çdo ditë?
+                </p>
+                <a href="mailto:info@cineal.stream"
+                  style={{ flexShrink: 0, background: '#e50914', color: '#fff', textDecoration: 'none', padding: '8px 16px', borderRadius: '5px', fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  Na kontakto
+                </a>
+              </div>
+            </div>
+
+            {/* Ad column */}
+            <div style={{ width: '240px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {/* Ad box 1 — i madh */}
+              <div style={{ background: '#12121a', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '10px', height: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+                </svg>
+                <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '11px' }}>Hapësirë për reklamë</span>
+                <span style={{ color: 'rgba(255,255,255,0.08)', fontSize: '10px' }}>240 × 200 px</span>
+              </div>
+
+              {/* Ad box 2 — i vogël */}
+              <div style={{ background: '#12121a', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '10px', height: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '11px' }}>Hapësirë për reklamë</span>
+                <span style={{ color: 'rgba(255,255,255,0.08)', fontSize: '10px' }}>240 × 80 px</span>
+              </div>
+            </div>
           </div>
         )}
 
+        {/* Filma të ngjashëm */}
         {similar.length > 0 && (
           <div style={{ marginTop: '48px' }}>
             <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600, marginBottom: '16px' }}>Filma të Ngjashëm</h2>
