@@ -5,6 +5,7 @@ import Footer from '@/components/layout/Footer'
 import MovieCard, { TrendingCard } from '@/components/movie/MovieCard'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 const GENRES = ['Aksion', 'Drama', 'Sci-Fi', 'Thriller', 'Horror', 'Comedy', 'Anime', 'Romance', 'Dokumentar']
 
@@ -14,6 +15,9 @@ export default function HomePage() {
   const [continueWatching, setContinueWatching] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
+  const [featuredInWatchlist, setFeaturedInWatchlist] = useState(false)
+  const [watchlistMsg, setWatchlistMsg] = useState('')
+  const router = useRouter()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -69,6 +73,27 @@ export default function HomePage() {
 
   const featured = movies[0]
 
+  // Check if featured is in watchlist
+  useEffect(() => {
+    if (!user || !featured) return
+    supabase.from('watchlist').select('id').eq('user_id', user.id).eq('movie_id', featured.id).maybeSingle()
+      .then(({ data }) => setFeaturedInWatchlist(!!data))
+  }, [user, featured])
+
+  const toggleFeaturedWatchlist = async () => {
+    if (!user) { router.push('/auth/login'); return }
+    if (featuredInWatchlist) {
+      await supabase.from('watchlist').delete().eq('user_id', user.id).eq('movie_id', featured.id)
+      setFeaturedInWatchlist(false)
+      setWatchlistMsg('U hoq!')
+    } else {
+      await supabase.from('watchlist').insert({ user_id: user.id, movie_id: featured.id })
+      setFeaturedInWatchlist(true)
+      setWatchlistMsg('U shtua!')
+    }
+    setTimeout(() => setWatchlistMsg(''), 2000)
+  }
+
   const moviesByGenre = GENRES.map(genre => ({
     genre,
     movies: movies.filter(m => m.genre === genre).slice(0, 10)
@@ -111,13 +136,21 @@ export default function HomePage() {
                 {featured.description.substring(0, 160)}{featured.description.length > 160 ? '...' : ''}
               </p>
             )}
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
               <Link href={`/film/${featured.slug}?play=true`} style={{ background: '#e50914', color: '#fff', padding: '11px 26px', borderRadius: '6px', textDecoration: 'none', fontWeight: 600, fontSize: '14px' }}>
                 ▶ Shiko Tani
               </Link>
-              <Link href={`/film/${featured.slug}`} style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '11px 24px', borderRadius: '6px', textDecoration: 'none', fontWeight: 500, fontSize: '14px', border: '1px solid rgba(255,255,255,0.15)' }}>
-                + Më Shumë
-              </Link>
+              <button onClick={toggleFeaturedWatchlist}
+                style={{
+                  background: featuredInWatchlist ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.1)',
+                  border: `1px solid ${featuredInWatchlist ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.2)'}`,
+                  color: featuredInWatchlist ? '#22c55e' : '#fff',
+                  padding: '11px 24px', borderRadius: '6px', fontSize: '14px',
+                  cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 500,
+                }}>
+                {featuredInWatchlist ? '✓ Watchlist' : '+ Watchlist'}
+              </button>
+              {watchlistMsg && <span style={{ fontSize: '12px', color: '#22c55e' }}>{watchlistMsg}</span>}
             </div>
           </div>
         </div>
@@ -135,7 +168,6 @@ export default function HomePage() {
               {continueWatching.map((m: any) => (
                 <div key={m.id} className="trending-item">
                   <div style={{ position: 'relative' }}>
-                    {/* Butoni X */}
                     <button
                       onClick={(e) => removeFromContinueWatching(m.id, e)}
                       style={{
@@ -151,20 +183,13 @@ export default function HomePage() {
                     >
                       ✕
                     </button>
-
                     <Link href={`/film/${m.slug}?play=true`} style={{ textDecoration: 'none' }}>
                       <div style={{ borderRadius: '8px', overflow: 'hidden', background: '#12121a', cursor: 'pointer', position: 'relative' }}>
                         {m.poster_url
                           ? <img src={m.poster_url} alt={m.title} style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', display: 'block' }} />
                           : <div style={{ width: '100%', aspectRatio: '16/9', background: '#1a1a2e' }} />
                         }
-                        {/* Gradient i zi nga fundi */}
-                        <div style={{
-                          position: 'absolute', bottom: '3px', left: 0, right: 0, height: '60px',
-                          background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%)',
-                          pointerEvents: 'none',
-                        }} />
-                        {/* Progress bar */}
+                        <div style={{ position: 'absolute', bottom: '3px', left: 0, right: 0, height: '60px', background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%)', pointerEvents: 'none' }} />
                         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '3px', background: 'rgba(255,255,255,0.15)' }}>
                           <div style={{ height: '100%', background: '#e50914', width: `${Math.min(100, (m.progress_seconds / 7200) * 100)}%` }} />
                         </div>
@@ -224,14 +249,12 @@ export default function HomePage() {
           gap: 12px;
         }
         .category-item { width: 100%; }
-
         .trending-scroll {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
           gap: 14px;
         }
         .trending-item { width: 100%; }
-
         @media (max-width: 768px) {
           .category-scroll {
             display: flex;
