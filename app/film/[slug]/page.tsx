@@ -129,7 +129,7 @@ export default function FilmPage() {
               {/* Play icon overlay */}
               <div style={{
                 position: 'absolute', inset: 0, borderRadius: '8px',
-                background: 'rgba(0,0,0,0.4)',
+                background: 'rgba(10,10,15,0.95)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 opacity: 0, transition: 'opacity 0.2s',
               }}
