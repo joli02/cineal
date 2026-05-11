@@ -402,8 +402,30 @@ export default function AdminPage() {
 
       const finalVtt = 'WEBVTT\n\n' + translatedChunks.join('\n\n')
       setVttResult(finalVtt)
-      setVttStatus('Perkthimi përfundoi!')
-      showToast('Titrat u përkthyen me sukses!')
+setVttStatus('Perkthimi përfundoi!')
+showToast('Titrat u përkthyen me sukses!')
+
+// Ngarko automatikisht te Bunny
+setVttUploading(true)
+setVttUploadedUrl('')
+try {
+  const autoFileName = vttFileName
+    ? vttFileName.replace(/\.(vtt|srt)$/i, '-sq.vtt')
+    : 'titrat-sq.vtt'
+  const autoBlob = new Blob([finalVtt], { type: 'text/vtt' })
+  const autoRes = await fetch(`/api/bunny-upload?filename=${encodeURIComponent(autoFileName)}`, {
+    method: 'POST',
+    body: autoBlob,
+    headers: { 'Content-Type': 'text/vtt' },
+  })
+  const autoData = await autoRes.json()
+  if (!autoRes.ok) throw new Error(autoData.error || 'Upload dështoi')
+  setVttUploadedUrl(autoData.url)
+  showToast('Titrat u ngarkuan te Bunny CDN!')
+} catch (e: any) {
+  showToast('Upload dështoi: ' + e.message, true)
+}
+setVttUploading(false)
     } catch (e: any) {
       showToast(e.message || 'Gabim gjatë perkthimit!', true)
       setVttStatus('Gabim!')
