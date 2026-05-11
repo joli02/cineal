@@ -117,7 +117,6 @@ export default function FilmPage() {
         <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${movie.backdrop_url || movie.poster_url})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(1)' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(10,10,15,0.98) 30%, rgba(10,10,15,0.7) 55%, rgba(10,10,15,0.2) 80%, transparent 100%)' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0a0a0f 0%, transparent 50%)' }} />
-
         <div style={{ position: 'relative', zIndex: 1, padding: 'clamp(60px, 10vw, 100px) clamp(20px, 5vw, 60px) 40px', maxWidth: '580px' }}>
           <div style={{ fontSize: '11px', color: '#e50914', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>{movie.genre}</div>
           <h1 style={{ fontSize: 'clamp(24px, 5vw, 42px)', fontWeight: 700, lineHeight: 1.1, marginBottom: '12px' }}>{movie.title_sq || movie.title}</h1>
@@ -150,19 +149,18 @@ export default function FilmPage() {
       {/* Content */}
       <div style={{ padding: '28px clamp(16px, 4vw, 60px) 60px' }}>
 
-        {/* Player + Ad boxes */}
         {playing && (movie.video_url || movie.embed_url) && (
           <div style={{ display: 'flex', gap: '16px', alignItems: 'stretch', maxWidth: '100%' }}>
 
-            {/* Player + njoftim */}
+            {/* Player kolona */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <VideoPlayer movie={movie} onTimeUpdate={handleTimeUpdate} startTime={savedTime} />
-{/* Mobile ad box — vetëm mobile */}
-<div className="mobile-ad-box">
-  <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '11px' }}>Hapësirë për reklamë</span>
-</div>
-{/* Njoftim poshtë playerit */}
-<div style={{ marginTop: '10px', background: '#12121a'...
+
+              {/* Mobile ad box — vetëm mobile, 50% gjerësi */}
+              <div className="mobile-ad-box">
+                <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '11px' }}>Hapësirë për reklamë</span>
+              </div>
+
               {/* Njoftim poshtë playerit */}
               <div style={{ marginTop: '10px', background: '#12121a', border: '1px solid rgba(229,9,20,0.2)', borderRadius: '8px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
                 <p style={{ color: '#b0b0c0', fontSize: '12px', margin: 0, lineHeight: 1.5 }}>
@@ -175,30 +173,18 @@ export default function FilmPage() {
               </div>
             </div>
 
-            {/* Ad column — stretch to fill player height */}
+            {/* Ad boxes kolona — vetëm desktop */}
             <div className="ad-col-desktop" style={{ width: '320px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {/* Ad box 1 — mbush hapësirën */}
-              <div style={{
-                background: '#12121a', border: '1px dashed rgba(255,255,255,0.1)',
-                borderRadius: '10px', flex: 1,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                minHeight: '160px',
-              }}>
+              <div style={{ background: '#12121a', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '10px', flex: 1, minHeight: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5">
                   <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
                 </svg>
                 <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '11px' }}>Hapësirë për reklamë</span>
-                <span style={{ color: 'rgba(255,255,255,0.08)', fontSize: '10px' }}>240 × auto px</span>
+                <span style={{ color: 'rgba(255,255,255,0.08)', fontSize: '10px' }}>320 × auto px</span>
               </div>
-
-              {/* Ad box 2 — fiks poshtë */}
-              <div style={{
-                background: '#12121a', border: '1px dashed rgba(255,255,255,0.1)',
-                borderRadius: '10px', height: '80px', flexShrink: 0,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px',
-              }}>
+              <div style={{ background: '#12121a', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '10px', height: '80px', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                 <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '11px' }}>Hapësirë për reklamë</span>
-                <span style={{ color: 'rgba(255,255,255,0.08)', fontSize: '10px' }}>240 × 80 px</span>
+                <span style={{ color: 'rgba(255,255,255,0.08)', fontSize: '10px' }}>320 × 80 px</span>
               </div>
             </div>
           </div>
@@ -230,31 +216,38 @@ export default function FilmPage() {
           </div>
         )}
       </div>
-<style>{`
-  @media (max-width: 768px) {
-    .ad-col-desktop {
-      display: none !important;
-    }
-  }
-`}</style>
-      @media (max-width: 768px) {
-  .ad-col-desktop { display: none !important; }
-  .mobile-ad-box {
-    display: flex !important;
-    width: 50%;
-    height: 55px;
-    background: #12121a;
-    border: 1px dashed rgba(255,255,255,0.1);
-    border-radius: 8px;
-    align-items: center;
-    justify-content: center;
-    margin-top: 10px;
-  }
-}
-@media (min-width: 769px) {
-  .mobile-ad-box { display: none !important; }
-}
+
       <Footer />
+
+      <style>{`
+        /* Desktop: ad boxes visible */
+        .ad-col-desktop {
+          display: flex;
+        }
+        /* Mobile ad box: fshehur në desktop */
+        .mobile-ad-box {
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+          /* Fshi ad boxes në mobile */
+          .ad-col-desktop {
+            display: none !important;
+          }
+          /* Shfaq mobile ad box — 50% gjerësi */
+          .mobile-ad-box {
+            display: flex !important;
+            width: 50%;
+            height: 55px;
+            background: #12121a;
+            border: 1px dashed rgba(255,255,255,0.1);
+            border-radius: 8px;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+          }
+        }
+      `}</style>
     </div>
   )
 }
