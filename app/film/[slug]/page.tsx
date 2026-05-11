@@ -150,24 +150,12 @@ export default function FilmPage() {
       {/* Content */}
       <div style={{ padding: '28px clamp(16px, 4vw, 60px) 60px' }}>
 
-        <div style={{ width: '240px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '10px', alignSelf: 'stretch' }}>
-  {/* Ad box 1 — mbush hapësirën */}
-  <div style={{ background: '#12121a', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '10px', flex: 1, minHeight: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-    ...
-  </div>
-
-  {/* Ad box 2 — fiks */}
-  <div style={{ background: '#12121a', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '10px', height: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-    ...
-  </div>
-</div>
-        
-        {/* Player + Ad boxes row */}
+        {/* Player + Ad boxes */}
         {playing && (movie.video_url || movie.embed_url) && (
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', maxWidth: '1100px' }}>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'stretch', maxWidth: '1100px' }}>
 
             {/* Player + njoftim */}
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <VideoPlayer movie={movie} onTimeUpdate={handleTimeUpdate} startTime={savedTime} />
 
               {/* Njoftim poshtë playerit */}
@@ -182,19 +170,28 @@ export default function FilmPage() {
               </div>
             </div>
 
-            {/* Ad boxes */}
+            {/* Ad column — stretch to fill player height */}
             <div style={{ width: '240px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {/* Ad box 1 */}
-              <div style={{ background: '#12121a', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '10px', flex: 1, height: 'auto', minHeight: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              {/* Ad box 1 — mbush hapësirën */}
+              <div style={{
+                background: '#12121a', border: '1px dashed rgba(255,255,255,0.1)',
+                borderRadius: '10px', flex: 1,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                minHeight: '160px',
+              }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5">
                   <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
                 </svg>
                 <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '11px' }}>Hapësirë për reklamë</span>
-                <span style={{ color: 'rgba(255,255,255,0.08)', fontSize: '10px' }}>240 × 200 px</span>
+                <span style={{ color: 'rgba(255,255,255,0.08)', fontSize: '10px' }}>240 × auto px</span>
               </div>
 
-              {/* Ad box 2 */}
-              <div style={{ background: '#12121a', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '10px', height: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+              {/* Ad box 2 — fiks poshtë */}
+              <div style={{
+                background: '#12121a', border: '1px dashed rgba(255,255,255,0.1)',
+                borderRadius: '10px', height: '80px', flexShrink: 0,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px',
+              }}>
                 <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '11px' }}>Hapësirë për reklamë</span>
                 <span style={{ color: 'rgba(255,255,255,0.08)', fontSize: '10px' }}>240 × 80 px</span>
               </div>
