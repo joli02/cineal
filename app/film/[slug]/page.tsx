@@ -172,7 +172,7 @@ export default function FilmPage() {
         {/* Player */}
         {playing && (movie.video_url || movie.embed_url) && (
           <div style={{ marginTop: '28px', maxWidth: '960px' }}>
-            <VideoPlayer movie={movie} onTimeUpdate={handleTimeUpdate} />
+           <VideoPlayer movie={movie} onTimeUpdate={handleTimeUpdate} startTime={savedTime} />
           </div>
         )}
 
