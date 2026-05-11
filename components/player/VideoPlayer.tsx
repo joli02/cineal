@@ -40,7 +40,7 @@ export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onT
   const [subtitleLang, setSubtitleLang] = useState<'sq' | 'none'>('sq')
   const [buffered, setBuffered] = useState(0)
 
-  // Load HLS only after user clicks play
+  // Load HLS
   useEffect(() => {
     if (!started) return
     const video = videoRef.current
@@ -54,6 +54,10 @@ export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onT
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           video.play().catch(() => {})
           setPlaying(true)
+        })
+        // Fix: also listen for duration from HLS
+        hls.on(Hls.Events.LEVEL_LOADED, (_e, data) => {
+          if (data.details.totalduration) setDuration(data.details.totalduration)
         })
         return () => hls.destroy()
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
@@ -89,20 +93,34 @@ export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onT
       onTimeUpdate?.(video.currentTime)
       if (video.buffered.length > 0) setBuffered(video.buffered.end(video.buffered.length - 1))
     }
-    const onDuration = () => setDuration(video.duration)
+    const onDuration = () => {
+      if (video.duration && !isNaN(video.duration) && isFinite(video.duration)) {
+        setDuration(video.duration)
+      }
+    }
+    const onLoaded = () => {
+      if (video.duration && !isNaN(video.duration) && isFinite(video.duration)) {
+        setDuration(video.duration)
+      }
+    }
     const onPlay = () => setPlaying(true)
     const onPause = () => setPlaying(false)
+
     video.addEventListener('timeupdate', onTime)
     video.addEventListener('durationchange', onDuration)
+    video.addEventListener('loadedmetadata', onLoaded)
+    video.addEventListener('canplay', onLoaded)
     video.addEventListener('play', onPlay)
     video.addEventListener('pause', onPause)
     return () => {
       video.removeEventListener('timeupdate', onTime)
       video.removeEventListener('durationchange', onDuration)
+      video.removeEventListener('loadedmetadata', onLoaded)
+      video.removeEventListener('canplay', onLoaded)
       video.removeEventListener('play', onPlay)
       video.removeEventListener('pause', onPause)
     }
-  }, [onTimeUpdate])
+  }, [onTimeUpdate, started])
 
   // Fullscreen
   useEffect(() => {
@@ -158,8 +176,7 @@ export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onT
 
   const handleVideoClick = () => {
     if (!started) { setStarted(true); return }
-    togglePlay()
-    showControls()
+    togglePlay(); showControls()
   }
 
   const seek = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -193,13 +210,13 @@ export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onT
   }
 
   const formatTime = (s: number) => {
-    if (!s || isNaN(s)) return '0:00'
+    if (!s || isNaN(s) || !isFinite(s)) return '0:00'
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60)
     return h > 0 ? `${h}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}` : `${m}:${sec.toString().padStart(2, '0')}`
   }
 
-  const pct = duration ? (currentTime / duration) * 100 : 0
-  const buffPct = duration ? (buffered / duration) * 100 : 0
+  const pct = duration > 0 ? (currentTime / duration) * 100 : 0
+  const buffPct = duration > 0 ? (buffered / duration) * 100 : 0
 
   return (
     <div style={{ background: '#000', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -209,7 +226,7 @@ export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onT
         onMouseMove={() => started && showControls()}
         onMouseLeave={() => playing && setControlsVisible(false)}
       >
-        {/* Poster + play button when not started */}
+        {/* Poster */}
         {!started && (
           <div
             style={{
@@ -238,7 +255,7 @@ export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onT
           </div>
         )}
 
-        {/* Video element */}
+        {/* Video */}
         {started && (
           <video
             ref={videoRef}
@@ -252,7 +269,7 @@ export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onT
           </video>
         )}
 
-        {/* Controls overlay — only when started */}
+        {/* Controls */}
         {started && (
           <div
             style={{
@@ -302,7 +319,7 @@ export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onT
               </button>
               <input type="range" min="0" max="1" step="0.05" value={muted ? 0 : volume} onChange={changeVolume}
                 style={{ width: '70px', accentColor: '#e50914', cursor: 'pointer' }} />
-              <span style={{ color: '#fff', fontSize: '13px', fontFamily: 'monospace' }}>
+              <span style={{ color: '#fff', fontSize: '13px', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
                 {formatTime(currentTime)} / {formatTime(duration)}
               </span>
               <div style={{ flex: 1 }} />
@@ -324,7 +341,7 @@ export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onT
       </div>
 
       {/* Info bar */}
-      <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', color: '#6b6b80', background: '#0a0a0f' }}>
+      <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', color: '#6b6b80', background: '#1a1818' }}>
         {movie.subtitle_url && (
           <span style={{ background: 'rgba(245,166,35,0.12)', border: '1px solid rgba(245,166,35,0.3)', color: '#f5a623', fontSize: '11px', padding: '3px 10px', borderRadius: '20px', fontWeight: 500 }}>
             Titra Shqip
