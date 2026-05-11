@@ -11,7 +11,15 @@ function isTVDevice(): boolean {
     (ua.includes('android') && !ua.includes('mobile') && !ua.includes('tablet'))
 }
 
-export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onTimeUpdate?: (time: number) => void }) {
+export default function VideoPlayer({
+  movie,
+  onTimeUpdate,
+  startTime = 0
+}: {
+  movie: Movie,
+  onTimeUpdate?: (time: number) => void,
+  startTime?: number
+}) {
   const isTV = typeof window !== 'undefined' && isTVDevice()
 
   if (isTV && movie.embed_url) {
@@ -28,6 +36,7 @@ export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onT
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const startTimeApplied = useRef(false)
 
   const [playing, setPlaying] = useState(false)
   const [started, setStarted] = useState(false)
@@ -52,23 +61,41 @@ export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onT
         hls.loadSource(movie.video_url!)
         hls.attachMedia(video)
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          // Apply startTime before playing
+          if (startTime > 0 && !startTimeApplied.current) {
+            video.currentTime = startTime
+            startTimeApplied.current = true
+          }
           video.play().catch(() => {})
           setPlaying(true)
         })
-        // Fix: also listen for duration from HLS
         hls.on(Hls.Events.LEVEL_LOADED, (_e, data) => {
           if (data.details.totalduration) setDuration(data.details.totalduration)
         })
         return () => hls.destroy()
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = movie.video_url!
-        video.play().catch(() => {}); setPlaying(true)
+        video.addEventListener('loadedmetadata', () => {
+          if (startTime > 0 && !startTimeApplied.current) {
+            video.currentTime = startTime
+            startTimeApplied.current = true
+          }
+          video.play().catch(() => {})
+          setPlaying(true)
+        }, { once: true })
       }
     } else {
       video.src = movie.video_url!
-      video.play().catch(() => {}); setPlaying(true)
+      video.addEventListener('loadedmetadata', () => {
+        if (startTime > 0 && !startTimeApplied.current) {
+          video.currentTime = startTime
+          startTimeApplied.current = true
+        }
+        video.play().catch(() => {})
+        setPlaying(true)
+      }, { once: true })
     }
-  }, [started, movie.video_url])
+  }, [started, movie.video_url, startTime])
 
   // Subtitle
   useEffect(() => {
@@ -94,18 +121,13 @@ export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onT
       if (video.buffered.length > 0) setBuffered(video.buffered.end(video.buffered.length - 1))
     }
     const onDuration = () => {
-      if (video.duration && !isNaN(video.duration) && isFinite(video.duration)) {
-        setDuration(video.duration)
-      }
+      if (video.duration && !isNaN(video.duration) && isFinite(video.duration)) setDuration(video.duration)
     }
     const onLoaded = () => {
-      if (video.duration && !isNaN(video.duration) && isFinite(video.duration)) {
-        setDuration(video.duration)
-      }
+      if (video.duration && !isNaN(video.duration) && isFinite(video.duration)) setDuration(video.duration)
     }
     const onPlay = () => setPlaying(true)
     const onPause = () => setPlaying(false)
-
     video.addEventListener('timeupdate', onTime)
     video.addEventListener('durationchange', onDuration)
     video.addEventListener('loadedmetadata', onLoaded)
@@ -282,7 +304,6 @@ export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onT
             }}
             onClick={e => { if (e.target === e.currentTarget) handleVideoClick() }}
           >
-            {/* Progress bar */}
             <div style={{ padding: '0 16px 8px' }}>
               <div
                 style={{ height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px', cursor: 'pointer', position: 'relative', transition: 'height 0.15s' }}
@@ -296,7 +317,6 @@ export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onT
               </div>
             </div>
 
-            {/* Bottom controls */}
             <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px 14px', gap: '12px' }}
               onClick={e => e.stopPropagation()}>
               <button onClick={togglePlay} style={btn}>
@@ -340,7 +360,6 @@ export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onT
         )}
       </div>
 
-      {/* Info bar */}
       <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', color: '#6b6b80', background: '#0a0a0f' }}>
         {movie.subtitle_url && (
           <span style={{ background: 'rgba(245,166,35,0.12)', border: '1px solid rgba(245,166,35,0.3)', color: '#f5a623', fontSize: '11px', padding: '3px 10px', borderRadius: '20px', fontWeight: 500 }}>
