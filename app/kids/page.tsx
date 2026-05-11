@@ -6,9 +6,9 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
 const KIDS_CATEGORIES = [
-  { id: '2-6', label: 'Për 2–6 Vjeç', desc: 'Animacione të buta dhe ngjyrosëse' },
-  { id: '7plus', label: 'Për 7+', desc: 'Aventura dhe histori emocionuese' },
-  { id: 'family', label: 'Familje', desc: 'Për të gjithë bashkë' },
+  { id: '2-6', label: 'Për 2–6 Vjeç' },
+  { id: '7plus', label: 'Për 7+' },
+  { id: 'family', label: 'Familje' },
 ]
 
 export default function KidsPage() {
@@ -30,81 +30,98 @@ export default function KidsPage() {
     fetchMovies()
   }, [])
 
-  const filtered = activeCategory
-    ? movies.filter(m => m.kids_category === activeCategory)
-    : movies
+  const filtered = activeCategory ? movies.filter(m => m.kids_category === activeCategory) : movies
+
+  // Group by kids_category for display
+  const byCategory = KIDS_CATEGORIES.map(cat => ({
+    ...cat,
+    movies: movies.filter(m => m.kids_category === cat.id).slice(0, 10)
+  })).filter(c => c.movies.length > 0)
 
   return (
-    <div style={{ background: '#262424', minHeight: '100vh', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#262424', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #1a1818 0%, #2a2020 100%)', padding: 'clamp(40px, 8vw, 80px) clamp(16px, 4vw, 60px)', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <h1 style={{ fontSize: 'clamp(28px, 6vw, 48px)', fontWeight: 700, marginBottom: '12px' }}>
-          Kids
-        </h1>
-        <p style={{ fontSize: '15px', color: '#b0b0c0', maxWidth: '500px', margin: '0 auto 32px', lineHeight: 1.6 }}>
-          Filma dhe animacione të sigurta për fëmijë — pa dhunë, pa përmbajtje jo të përshtatshme
+      <div style={{ padding: 'clamp(40px, 6vw, 60px) clamp(16px, 4vw, 60px) 20px' }}>
+        <h1 style={{ fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: 700, marginBottom: '8px' }}>Kids</h1>
+        <p style={{ fontSize: '14px', color: '#b0b0c0', marginBottom: '24px' }}>
+          Filma dhe animacione të sigurta për fëmijë
         </p>
 
-        {/* Subcategories */}
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+        {/* Category filter */}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
           <button onClick={() => setActiveCategory('')}
-            style={{
-              padding: '10px 22px', borderRadius: '24px', cursor: 'pointer', fontSize: '14px', fontWeight: 500,
-              background: !activeCategory ? '#e50914' : 'rgba(255,255,255,0.06)',
-              border: !activeCategory ? '1px solid #e50914' : '1px solid rgba(255,255,255,0.1)',
-              color: '#fff', fontFamily: "'DM Sans', sans-serif",
-            }}>
+            style={{ background: !activeCategory ? '#e50914' : 'rgba(255,255,255,0.05)', border: !activeCategory ? '1px solid #e50914' : '1px solid rgba(255,255,255,0.08)', color: !activeCategory ? '#fff' : '#b0b0c0', padding: '6px 16px', borderRadius: '20px', fontSize: '13px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
             Të gjitha
           </button>
           {KIDS_CATEGORIES.map(cat => (
             <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
-              style={{
-                padding: '10px 22px', borderRadius: '24px', cursor: 'pointer', fontSize: '14px', fontWeight: 500,
-                background: activeCategory === cat.id ? '#e50914' : 'rgba(255,255,255,0.06)',
-                border: activeCategory === cat.id ? '1px solid #e50914' : '1px solid rgba(255,255,255,0.1)',
-                color: '#fff', fontFamily: "'DM Sans', sans-serif",
-              }}>
+              style={{ background: activeCategory === cat.id ? '#e50914' : 'rgba(255,255,255,0.05)', border: activeCategory === cat.id ? '1px solid #e50914' : '1px solid rgba(255,255,255,0.08)', color: activeCategory === cat.id ? '#fff' : '#b0b0c0', padding: '6px 16px', borderRadius: '20px', fontSize: '13px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
               {cat.label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Movies grid */}
-      <div style={{ padding: 'clamp(24px, 4vw, 40px) clamp(16px, 4vw, 60px)' }}>
+      <div style={{ padding: '0 clamp(16px, 4vw, 60px) 60px' }}>
         {loading && <div style={{ textAlign: 'center', padding: '60px', color: '#6b6b80' }}>Duke ngarkuar...</div>}
 
         {!loading && filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: '80px', color: '#6b6b80' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎬</div>
-            <div style={{ fontSize: '16px' }}>Nuk ka filma akoma në këtë kategori</div>
+            <div>Nuk ka filma akoma në këtë kategori</div>
           </div>
         )}
 
-        {!loading && filtered.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '14px' }}>
+        {/* Show by category when "all" selected */}
+        {!loading && !activeCategory && byCategory.map(cat => (
+          <div key={cat.id} style={{ marginBottom: '40px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>{cat.label}</h2>
+            </div>
+            <div className="category-scroll">
+              {cat.movies.map((m: any) => (
+                <div key={m.id} className="category-item">
+                  <Link href={`/film/${m.slug}?play=true`} style={{ textDecoration: 'none' }}>
+                    <div style={{ borderRadius: '8px', overflow: 'hidden', background: '#1a1818', cursor: 'pointer' }}
+                      onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.02)')}
+                      onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}>
+                      {m.poster_url
+                        ? <img src={m.poster_url} alt={m.title} style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', display: 'block' }} />
+                        : <div style={{ width: '100%', aspectRatio: '2/3', background: '#2a2020', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>🎬</div>
+                      }
+                      <div style={{ padding: '8px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 500, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title_sq || m.title}</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                          <span style={{ fontSize: '11px', color: '#6b6b80' }}>{m.year}</span>
+                          {m.rating && <span style={{ fontSize: '11px', color: '#f5a623' }}>★ {m.rating}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {/* Show flat grid when category selected */}
+        {!loading && activeCategory && filtered.length > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px' }}>
             {filtered.map((m: any) => (
               <Link key={m.id} href={`/film/${m.slug}?play=true`} style={{ textDecoration: 'none' }}>
-                <div style={{ borderRadius: '10px', overflow: 'hidden', background: '#1a1818', cursor: 'pointer', transition: 'transform 0.2s' }}
-                  onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.03)')}
-                  onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}>
+                <div style={{ borderRadius: '8px', overflow: 'hidden', background: '#1a1818', cursor: 'pointer' }}>
                   {m.poster_url
                     ? <img src={m.poster_url} alt={m.title} style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', display: 'block' }} />
-                    : <div style={{ width: '100%', aspectRatio: '2/3', background: '#2a2020', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' }}>🎬</div>
+                    : <div style={{ width: '100%', aspectRatio: '2/3', background: '#2a2020' }} />
                   }
-                  <div style={{ padding: '10px' }}>
+                  <div style={{ padding: '8px' }}>
                     <div style={{ fontSize: '12px', fontWeight: 500, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title_sq || m.title}</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
                       <span style={{ fontSize: '11px', color: '#6b6b80' }}>{m.year}</span>
                       {m.rating && <span style={{ fontSize: '11px', color: '#f5a623' }}>★ {m.rating}</span>}
                     </div>
-                    {m.kids_category && (
-                      <span style={{ fontSize: '10px', background: 'rgba(229,9,20,0.15)', color: '#e50914', padding: '2px 6px', borderRadius: '4px', marginTop: '4px', display: 'inline-block' }}>
-                        {KIDS_CATEGORIES.find(c => c.id === m.kids_category)?.label || m.kids_category}
-                      </span>
-                    )}
                   </div>
                 </div>
               </Link>
@@ -114,6 +131,31 @@ export default function KidsPage() {
       </div>
 
       <Footer />
+
+      <style>{`
+        .category-scroll {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+          gap: 12px;
+        }
+        .category-item { width: 100%; }
+        @media (max-width: 768px) {
+          .category-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            padding-bottom: 8px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+          }
+          .category-scroll::-webkit-scrollbar { display: none; }
+          .category-item {
+            flex: 0 0 calc(50% - 5px);
+            min-width: calc(50% - 5px);
+            scroll-snap-align: start;
+          }
+        }
+      `}</style>
     </div>
   )
 }
