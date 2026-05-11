@@ -53,7 +53,7 @@ export default function RegisterPage() {
   )
 
   if (success) return (
-    <div style={{ background: '#262424', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ background: '#0a0a0f', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{ background: '#1a1818', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '12px', padding: '40px', maxWidth: '420px', textAlign: 'center' }}>
         <img src={gender === 'female' ? '/female_icon.svg' : '/male_icon.svg'} alt={gender || ''} style={{ width: '80px', height: '80px', marginBottom: '16px' }} />
         <h2 style={{ fontSize: '20px', fontWeight: 500, color: '#fff', marginBottom: '8px' }}>Llogaria u krijua!</h2>
@@ -66,7 +66,7 @@ export default function RegisterPage() {
   )
 
   return (
-    <div style={{ background: '#262424', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Sans', sans-serif", padding: '20px' }}>
+    <div style={{ background: '#0a0a0f', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Sans', sans-serif", padding: '20px' }}>
       <Link href="/" style={{ textDecoration: 'none', marginBottom: '28px' }}>
         <img src="/logo.svg" alt="Cineal" style={{ height: '30px' }} />
       </Link>
