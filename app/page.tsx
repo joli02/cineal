@@ -142,7 +142,6 @@ export default function HomePage() {
                       </div>
                       <div style={{ padding: '8px' }}>
                         <div style={{ fontSize: '12px', fontWeight: 500, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title_sq || m.title}</div>
-                        <div style={{ fontSize: '11px', color: '#e50914', marginTop: '2px' }}>Nga {formatProgress(m.progress_seconds)}</div>
                       </div>
                     </div>
                   </Link>
