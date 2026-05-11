@@ -48,7 +48,7 @@ export default function KidsPage() {
           position: 'absolute', inset: 0,
           backgroundImage: `url(/kids-cinema-watching-movie-with-popcorn.jpg)`,
           backgroundSize: 'cover',
-          backgroundPosition: 'center top',
+          backgroundPosition: 'center bottom',
           filter: 'brightness(1)',
         }} />
         {/* Gradient nga e majta */}
