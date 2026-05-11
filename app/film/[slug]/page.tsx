@@ -236,15 +236,15 @@ export default function FilmPage() {
           }
           /* Shfaq mobile ad box — 50% gjerësi */
           .mobile-ad-box {
-            display: flex !important;
-            width: 50%;
-            height: 55px;
-            background: #12121a;
-            border: 1px dashed rgba(255,255,255,0.1);
-            border-radius: 8px;
-            align-items: center;
-            justify-content: center;
-            margin-top: 10px;
+  display: flex !important;
+  width: 100%;
+  height: 90px;
+  background: #12121a;
+  border: 1px dashed rgba(255,255,255,0.1);
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
           }
         }
       `}</style>
