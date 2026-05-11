@@ -78,7 +78,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav style={{ background: 'rgba(38,36,36,0.97)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'sticky', top: 0, zIndex: 100, padding: '0 32px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <nav style={{ background: 'rgba(10,10,15,0.97)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'sticky', top: 0, zIndex: 100, padding: '0 32px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 
         <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
           <img src="/logo.svg" alt="Cineal" style={{ height: '28px', width: 'auto', maxWidth: '120px' }} />
