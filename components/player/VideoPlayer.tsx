@@ -3,7 +3,6 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Hls from 'hls.js'
 import { Movie } from '@/lib/supabase'
 
-// Detect Android TV / Smart TV browsers
 function isTVDevice(): boolean {
   if (typeof window === 'undefined') return false
   const ua = navigator.userAgent.toLowerCase()
@@ -12,24 +11,15 @@ function isTVDevice(): boolean {
     (ua.includes('android') && !ua.includes('mobile') && !ua.includes('tablet'))
 }
 
-export default function VideoPlayer({ movie }: { movie: Movie }) {
+export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onTimeUpdate?: (time: number) => void }) {
   const isTV = typeof window !== 'undefined' && isTVDevice()
 
-  // TV: use Bunny embed iframe directly
   if (isTV && movie.embed_url) {
     return (
-      <div style={{ background: '#0a0a0f', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
-          <iframe
-            src={movie.embed_url}
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
-            allowFullScreen
-            allow="autoplay; fullscreen"
-            title={movie.title}
-          />
-        </div>
-        <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', color: '#6b6b80' }}>
-          <span>HD 1080p</span>
+      <div style={{ background: '#000', borderRadius: '12px', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', paddingTop: '56.25%' }}>
+          <iframe src={movie.embed_url} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+            allowFullScreen allow="autoplay; fullscreen" title={movie.title} />
         </div>
       </div>
     )
@@ -49,31 +39,24 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
   const [subtitleLang, setSubtitleLang] = useState<'sq' | 'none'>('sq')
   const [buffered, setBuffered] = useState(0)
 
-  // Load hls.js — autoplay immediately
+  // Load HLS
   useEffect(() => {
     const video = videoRef.current
     if (!video || !movie.video_url) return
-
-    const isHls = movie.video_url.includes('.m3u8')
-    if (isHls) {
+    if (movie.video_url.includes('.m3u8')) {
       if (Hls.isSupported()) {
         const hls = new Hls()
         hls.loadSource(movie.video_url!)
         hls.attachMedia(video)
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          video.play().catch(() => {})
-          setPlaying(true)
-        })
+        hls.on(Hls.Events.MANIFEST_PARSED, () => { video.play().catch(() => {}); setPlaying(true) })
         return () => hls.destroy()
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = movie.video_url!
-        video.play().catch(() => {})
-        setPlaying(true)
+        video.play().catch(() => {}); setPlaying(true)
       }
     } else {
       video.src = movie.video_url!
-      video.play().catch(() => {})
-      setPlaying(true)
+      video.play().catch(() => {}); setPlaying(true)
     }
   }, [movie.video_url])
 
@@ -83,9 +66,7 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
     if (!video) return
     const apply = () => {
       for (let i = 0; i < video.textTracks.length; i++) {
-        video.textTracks[i].mode =
-          subtitleLang === 'sq' && video.textTracks[i].language === 'sq'
-            ? 'showing' : 'hidden'
+        video.textTracks[i].mode = subtitleLang === 'sq' && video.textTracks[i].language === 'sq' ? 'showing' : 'hidden'
       }
     }
     apply()
@@ -99,8 +80,8 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
     if (!video) return
     const onTime = () => {
       setCurrentTime(video.currentTime)
-      if (video.buffered.length > 0)
-        setBuffered(video.buffered.end(video.buffered.length - 1))
+      onTimeUpdate?.(video.currentTime)
+      if (video.buffered.length > 0) setBuffered(video.buffered.end(video.buffered.length - 1))
     }
     const onDuration = () => setDuration(video.duration)
     const onPlay = () => setPlaying(true)
@@ -115,25 +96,22 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
       video.removeEventListener('play', onPlay)
       video.removeEventListener('pause', onPause)
     }
-  }, [])
+  }, [onTimeUpdate])
 
-  // Fullscreen change
+  // Fullscreen
   useEffect(() => {
     const onFs = () => setIsFullscreen(!!document.fullscreenElement)
     document.addEventListener('fullscreenchange', onFs)
     return () => document.removeEventListener('fullscreenchange', onFs)
   }, [])
 
-  // Auto-hide controls — hide after 3s when playing
+  // Auto-hide controls
   const showControls = useCallback(() => {
     setControlsVisible(true)
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current)
-    hideTimerRef.current = setTimeout(() => {
-      setControlsVisible(false)
-    }, 3000)
+    hideTimerRef.current = setTimeout(() => setControlsVisible(false), 3000)
   }, [])
 
-  // When playing starts, begin auto-hide
   useEffect(() => {
     if (!playing) {
       setControlsVisible(true)
@@ -143,6 +121,63 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
     }
     return () => { if (hideTimerRef.current) clearTimeout(hideTimerRef.current) }
   }, [playing, showControls])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      const video = videoRef.current
+      if (!video) return
+      // Don't trigger if user is typing in an input
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) return
+
+      switch (e.code) {
+        case 'Space':
+          e.preventDefault()
+          if (video.paused) video.play()
+          else video.pause()
+          showControls()
+          break
+        case 'ArrowRight':
+          e.preventDefault()
+          video.currentTime = Math.min(video.duration, video.currentTime + 10)
+          showControls()
+          break
+        case 'ArrowLeft':
+          e.preventDefault()
+          video.currentTime = Math.max(0, video.currentTime - 10)
+          showControls()
+          break
+        case 'ArrowUp':
+          e.preventDefault()
+          video.volume = Math.min(1, video.volume + 0.1)
+          setVolume(video.volume)
+          showControls()
+          break
+        case 'ArrowDown':
+          e.preventDefault()
+          video.volume = Math.max(0, video.volume - 0.1)
+          setVolume(video.volume)
+          showControls()
+          break
+        case 'Escape':
+          if (document.fullscreenElement) document.exitFullscreen()
+          break
+        case 'KeyF':
+          e.preventDefault()
+          if (!document.fullscreenElement) containerRef.current?.requestFullscreen()
+          else document.exitFullscreen()
+          break
+        case 'KeyM':
+          e.preventDefault()
+          video.muted = !video.muted
+          setMuted(video.muted)
+          showControls()
+          break
+      }
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [showControls])
 
   const togglePlay = () => {
     const video = videoRef.current
@@ -159,9 +194,7 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
   }
 
   const toggleFullscreen = () => {
-    const el = containerRef.current
-    if (!el) return
-    if (!document.fullscreenElement) el.requestFullscreen()
+    if (!document.fullscreenElement) containerRef.current?.requestFullscreen()
     else document.exitFullscreen()
   }
 
@@ -176,9 +209,7 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
     const video = videoRef.current
     if (!video) return
     const v = parseFloat(e.target.value)
-    video.volume = v
-    setVolume(v)
-    setMuted(v === 0)
+    video.volume = v; setVolume(v); setMuted(v === 0)
   }
 
   const skip = (sec: number) => {
@@ -189,9 +220,7 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
 
   const formatTime = (s: number) => {
     if (!s || isNaN(s)) return '0:00'
-    const h = Math.floor(s / 3600)
-    const m = Math.floor((s % 3600) / 60)
-    const sec = Math.floor(s % 60)
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60)
     if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
     return `${m}:${sec.toString().padStart(2, '0')}`
   }
@@ -200,17 +229,13 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
   const buffPct = duration ? (buffered / duration) * 100 : 0
 
   return (
-    <div style={{ background: '#0a0a0f', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+    <div style={{ background: '#000', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
       <div
         ref={containerRef}
-        style={{
-          position: 'relative', paddingTop: '56.25%', background: '#000',
-          cursor: controlsVisible ? 'default' : 'none',
-        }}
+        style={{ position: 'relative', paddingTop: '56.25%', background: '#000', cursor: controlsVisible ? 'default' : 'none' }}
         onMouseMove={showControls}
         onMouseLeave={() => playing && setControlsVisible(false)}
       >
-        {/* Video — always visible, autoplay */}
         <video
           ref={videoRef}
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
@@ -218,23 +243,15 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
           onClick={togglePlay}
         >
           {movie.subtitle_url && (
-            <track
-              kind="subtitles"
-              src={movie.subtitle_url}
-              srcLang="sq"
-              label="Shqip"
-              default={subtitleLang === 'sq'}
-            />
+            <track kind="subtitles" src={movie.subtitle_url} srcLang="sq" label="Shqip" default={subtitleLang === 'sq'} />
           )}
         </video>
 
-        {/* Controls overlay */}
+        {/* Controls */}
         <div style={{
           position: 'absolute', inset: 0,
           display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-          background: controlsVisible
-            ? 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.1) 40%, transparent 70%)'
-            : 'transparent',
+          background: controlsVisible ? 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.1) 40%, transparent 70%)' : 'transparent',
           opacity: controlsVisible ? 1 : 0,
           transition: 'opacity 0.4s ease',
           pointerEvents: controlsVisible ? 'auto' : 'none',
@@ -242,44 +259,41 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
           {/* Progress bar */}
           <div style={{ padding: '0 16px 8px' }}>
             <div
-              style={{
-                height: '4px', background: 'rgba(255,255,255,0.2)',
-                borderRadius: '2px', cursor: 'pointer', position: 'relative',
-              }}
+              style={{ height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px', cursor: 'pointer', position: 'relative', transition: 'height 0.15s' }}
               onClick={seek}
               onMouseEnter={e => (e.currentTarget.style.height = '6px')}
               onMouseLeave={e => (e.currentTarget.style.height = '4px')}
             >
               <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${buffPct}%`, background: 'rgba(255,255,255,0.25)', borderRadius: '2px' }} />
               <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct}%`, background: '#e50914', borderRadius: '2px' }} />
-              <div style={{ position: 'absolute', top: '50%', left: `${pct}%`, transform: 'translate(-50%, -50%)', width: '12px', height: '12px', background: '#fff', borderRadius: '50%' }} />
+              <div style={{ position: 'absolute', top: '50%', left: `${pct}%`, transform: 'translate(-50%,-50%)', width: '12px', height: '12px', background: '#fff', borderRadius: '50%' }} />
             </div>
           </div>
 
           {/* Bottom controls */}
           <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px 14px', gap: '12px' }}>
-            <button onClick={togglePlay} style={btnStyle}>
+            <button onClick={togglePlay} style={btn}>
               {playing
                 ? <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
                 : <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
               }
             </button>
 
-            <button onClick={() => skip(-10)} style={btnStyle}>
+            <button onClick={() => skip(-10)} style={btn} title="← 10s">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
                 <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
                 <text x="9" y="14" fontSize="5" fill="white" fontWeight="bold">10</text>
               </svg>
             </button>
 
-            <button onClick={() => skip(10)} style={btnStyle}>
+            <button onClick={() => skip(10)} style={btn} title="→ 10s">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
                 <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
                 <text x="9" y="14" fontSize="5" fill="white" fontWeight="bold">10</text>
               </svg>
             </button>
 
-            <button onClick={toggleMute} style={btnStyle}>
+            <button onClick={toggleMute} style={btn}>
               {muted || volume === 0
                 ? <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15" stroke="white" strokeWidth="2"/><line x1="17" y1="9" x2="23" y2="15" stroke="white" strokeWidth="2"/></svg>
                 : <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="white" strokeWidth="2" fill="none"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14" stroke="white" strokeWidth="2" fill="none"/></svg>
@@ -295,19 +309,13 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
             <div style={{ flex: 1 }} />
 
             {movie.subtitle_url && (
-              <button
-                onClick={() => setSubtitleLang(s => s === 'sq' ? 'none' : 'sq')}
-                style={{
-                  ...btnStyle,
-                  background: subtitleLang === 'sq' ? 'rgba(229,9,20,0.85)' : 'rgba(255,255,255,0.15)',
-                  borderRadius: '4px', padding: '4px 10px',
-                  fontSize: '12px', color: '#fff', fontWeight: 700,
-                }}>
+              <button onClick={() => setSubtitleLang(s => s === 'sq' ? 'none' : 'sq')}
+                style={{ ...btn, background: subtitleLang === 'sq' ? 'rgba(229,9,20,0.85)' : 'rgba(255,255,255,0.15)', borderRadius: '4px', padding: '4px 10px', fontSize: '12px', color: '#fff', fontWeight: 700 }}>
                 AL
               </button>
             )}
 
-            <button onClick={toggleFullscreen} style={btnStyle}>
+            <button onClick={toggleFullscreen} style={btn} title="F - Fullscreen">
               {isFullscreen
                 ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
                 : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
@@ -318,19 +326,20 @@ export default function VideoPlayer({ movie }: { movie: Movie }) {
       </div>
 
       {/* Info bar */}
-      <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', color: '#6b6b80' }}>
+      <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', color: '#6b6b80', background: '#0a0a0f' }}>
         {movie.subtitle_url && (
           <span style={{ background: 'rgba(245,166,35,0.12)', border: '1px solid rgba(245,166,35,0.3)', color: '#f5a623', fontSize: '11px', padding: '3px 10px', borderRadius: '20px', fontWeight: 500 }}>
-            ✓ Titra Shqip
+            Titra Shqip
           </span>
         )}
         <span>HD 1080p</span>
+        <span style={{ fontSize: '11px', color: '#3b3b50' }}>· Space=pause · ←→=skip · ↑↓=volume · F=fullscreen</span>
       </div>
     </div>
   )
 }
 
-const btnStyle: React.CSSProperties = {
+const btn: React.CSSProperties = {
   background: 'none', border: 'none', cursor: 'pointer',
   padding: '4px', display: 'flex', alignItems: 'center',
   justifyContent: 'center', opacity: 0.9, transition: 'opacity 0.15s',
