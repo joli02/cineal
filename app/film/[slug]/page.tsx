@@ -238,7 +238,7 @@ export default function FilmPage() {
           .mobile-ad-box {
   display: flex !important;
   width: 100%;
-  height: 90px;
+  height: 120px;
   background: #12121a;
   border: 1px dashed rgba(255,255,255,0.1);
   border-radius: 8px;
