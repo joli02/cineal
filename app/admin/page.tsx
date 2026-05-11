@@ -976,10 +976,12 @@ setVttUploading(false)
                         style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>
                         Shkarko .vtt
                       </button>
-                      <button onClick={handleUploadToBunny} disabled={vttUploading}
-                        style={{ background: vttUploading ? '#2a2a3a' : '#f5a623', border: 'none', color: vttUploading ? '#6b6b80' : '#000', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: vttUploading ? 'not-allowed' : 'pointer' }}>
-                        {vttUploading ? 'Duke ngarkuar...' : 'Ngarko te Bunny'}
-                      </button>
+                      {!vttUploadedUrl && (
+  <button onClick={handleUploadToBunny} disabled={vttUploading}
+    style={{ background: vttUploading ? '#2a2a3a' : '#f5a623', border: 'none', color: vttUploading ? '#6b6b80' : '#000', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: vttUploading ? 'not-allowed' : 'pointer' }}>
+    {vttUploading ? 'Duke ngarkuar...' : 'Ngarko te Bunny'}
+  </button>
+)}
                     </div>
                   </div>
 
