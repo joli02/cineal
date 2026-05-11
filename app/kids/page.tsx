@@ -39,7 +39,7 @@ export default function KidsPage() {
   })).filter(c => c.movies.length > 0)
 
   return (
-    <div style={{ minHeight: '100vh', background: '#262424', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
       {/* Hero */}
