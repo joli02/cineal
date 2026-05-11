@@ -13,7 +13,6 @@ export default function Footer() {
             Platforma shqiptare e streaming premium. Shiko filma dhe seriale me titra shqip, falas.
           </p>
         </div>
-
         {[
           {
             title: 'Linqe',
@@ -21,8 +20,8 @@ export default function Footer() {
               { href: '/filma', label: 'Filma' },
               { href: '/seriale', label: 'Seriale' },
               { href: '/anime', label: 'Anime' },
-              { href: '/trending', label: 'Trending' },
-              { href: '/vip', label: '⭐ VIP' },
+              { href: '/kids', label: 'Kids' },
+              { href: '/vip', label: 'VIP' },
             ]
           },
           {
@@ -38,9 +37,8 @@ export default function Footer() {
             title: 'Kontakt',
             links: [
               { href: 'mailto:info@cineal.stream', label: 'info@cineal.stream' },
-              { href: 'https://instagram.com', label: 'Instagram' },
-              { href: 'https://facebook.com', label: 'Facebook' },
-              { href: 'https://tiktok.com', label: 'TikTok' },
+              { href: 'https://instagram.com/cineal.stream', label: 'Instagram' },
+              { href: 'https://tiktok.com/@cineal.stream', label: 'TikTok' },
             ]
           },
         ].map(col => (
@@ -50,6 +48,7 @@ export default function Footer() {
               {col.links.map(link => (
                 <li key={link.label}>
                   <Link href={link.href}
+                    target={link.href.startsWith('http') ? '_blank' : undefined}
                     style={{ fontSize: '13px', color: '#6b6b80', textDecoration: 'none' }}
                     onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
                     onMouseLeave={e => (e.currentTarget.style.color = '#6b6b80')}>
@@ -61,7 +60,6 @@ export default function Footer() {
           </div>
         ))}
       </div>
-
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)', padding: 'clamp(12px, 2vw, 16px) clamp(16px, 4vw, 32px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
         <p style={{ fontSize: '11px', color: '#6b6b80' }}>© 2025 Cineal. Të gjitha të drejtat të rezervuara.</p>
         <p style={{ fontSize: '11px', color: '#6b6b80' }}>Titra Shqip · HD Quality</p>
