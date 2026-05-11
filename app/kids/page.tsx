@@ -68,7 +68,8 @@ export default function KidsPage() {
             Kids
           </h1>
           <p style={{ fontSize: '15px', color: '#b0b0c0', lineHeight: 1.7, marginBottom: '28px', maxWidth: '420px' }}>
-            Filma dhe animacione të sigurta për fëmijë — për 2–6 vjeç, 7+ vjeç dhe të gjithë familjen.
+            Filma dhe animacione të sigurta për fëmijë
+            2–6 vjeç, 7+ vjeç dhe të gjithë familjen.
           </p>
 
           {/* Category buttons */}
