@@ -128,14 +128,14 @@ export default function HomePage() {
         {user && continueWatching.length > 0 && (
           <div style={{ marginBottom: '40px' }}>
             <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600, marginBottom: '16px' }}>Vazhdo Shikimin</h2>
-            <div className="category-scroll">
+            <div className="trending-scroll">
               {continueWatching.map((m: any) => (
-                <div key={m.id} className="category-item">
+                <div key={m.id} className="trending-item">
                   <Link href={`/film/${m.slug}?play=true`} style={{ textDecoration: 'none' }}>
                     <div style={{ borderRadius: '8px', overflow: 'hidden', background: '#12121a', cursor: 'pointer', position: 'relative' }}>
                       {m.poster_url
-                        ? <img src={m.poster_url} alt={m.title} style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', display: 'block' }} />
-                        : <div style={{ width: '100%', aspectRatio: '2/3', background: '#1a1a2e' }} />
+                        ? <img src={m.poster_url} alt={m.title} style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', display: 'block' }} />
+                        : <div style={{ width: '100%', aspectRatio: '16/9', background: '#1a1a2e' }} />
                       }
                       <div style={{ position: 'absolute', bottom: 42, left: 0, right: 0, height: '3px', background: 'rgba(255,255,255,0.2)' }}>
                         <div style={{ height: '100%', background: '#e50914', width: `${Math.min(100, (m.progress_seconds / 7200) * 100)}%` }} />
@@ -175,9 +175,9 @@ export default function HomePage() {
                 Shiko të gjitha →
               </Link>
             </div>
-            <div className="category-scroll">
+            <div className="trending-scroll">
               {gMovies.map((m: any) => (
-                <div key={m.id} className="category-item">
+                <div key={m.id} className="trending-item">
                   <MovieCard movie={m} />
                 </div>
               ))}
