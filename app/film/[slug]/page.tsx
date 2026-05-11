@@ -118,7 +118,7 @@ export default function FilmPage() {
           position: 'absolute', inset: 0,
           backgroundImage: `url(${movie.backdrop_url || movie.poster_url})`,
           backgroundSize: 'cover', backgroundPosition: 'center',
-          filter: 'brightness(0.45)'
+          filter: 'brightness(0.15)'
         }} />
         <div style={{
           position: 'absolute', inset: 0,
