@@ -65,11 +65,11 @@ export default function KidsPage() {
         {/* Info mbi hero */}
         <div style={{ position: 'relative', zIndex: 1, padding: 'clamp(60px, 10vw, 100px) clamp(20px, 5vw, 60px) 40px', maxWidth: '560px' }}>
           <h1 style={{ fontSize: 'clamp(36px, 6vw, 56px)', fontWeight: 700, marginBottom: '14px', lineHeight: 1.1 }}>
-            Kids
+            Kids Zone
           </h1>
           <p style={{ fontSize: '15px', color: '#b0b0c0', lineHeight: 1.7, marginBottom: '28px', maxWidth: '420px' }}>
-            Filma dhe animacione të sigurta për fëmijë
-            2–6 vjeç, 7+ vjeç dhe të gjithë familjen.
+            Kids Zone është një hapësirë e sigurt dhe argëtuese për fëmijë dhe familje,
+            me filma të përshtatshëm për moshat, animacione, përmbajtje edukative dhe aventura familjare.
           </p>
 
           {/* Category buttons */}
