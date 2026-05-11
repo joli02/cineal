@@ -75,33 +75,25 @@ export default function HomePage() {
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
-      {/* HERO — si faqja e filmit */}
+      {/* HERO */}
       {featured && (
         <div style={{ position: 'relative', height: 'clamp(500px, 80vh, 800px)', overflow: 'hidden' }}>
-          {/* Imazhi i plotë */}
           <div style={{
             position: 'absolute', inset: 0,
             backgroundImage: `url(${featured.backdrop_url || featured.poster_url})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            backgroundSize: 'cover', backgroundPosition: 'center',
             filter: 'brightness(1)',
           }} />
-          {/* Gradient nga e majta */}
           <div style={{
             position: 'absolute', inset: 0,
             background: 'linear-gradient(to right, rgba(10,10,15,0.98) 30%, rgba(10,10,15,0.7) 55%, rgba(10,10,15,0.2) 80%, transparent 100%)',
           }} />
-          {/* Gradient poshtë */}
           <div style={{
             position: 'absolute', inset: 0,
             background: 'linear-gradient(to top, #0a0a0f 0%, transparent 50%)',
           }} />
-
-          {/* Info */}
           <div style={{ position: 'relative', zIndex: 1, padding: 'clamp(80px, 12vw, 140px) clamp(20px, 5vw, 60px) 40px', maxWidth: '580px' }}>
-            <div style={{ fontSize: '11px', color: '#e50914', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>
-              Film i Ri
-            </div>
+            <div style={{ fontSize: '11px', color: '#e50914', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>Film i Ri</div>
             <h1 style={{ fontSize: 'clamp(28px, 5vw, 48px)', fontWeight: 700, lineHeight: 1.1, marginBottom: '12px' }}>
               {featured.title_sq || featured.title}
             </h1>
@@ -160,16 +152,13 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* TRENDING */}
+        {/* TRENDING — poster i madh 2/3 */}
         {trending.length > 0 && (
           <div style={{ marginBottom: '40px' }}>
             <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600, marginBottom: '16px' }}>Trending</h2>
-            <div className="category-scroll">
+            <div className="trending-scroll">
               {trending.map((m: any, i: number) => (
-                <div key={m.id} {
-  flex: 0 0 calc(80% - 5px);
-  min-width: calc(80% - 5px);
-}
+                <div key={m.id} className="trending-item">
                   <TrendingCard movie={m} index={i} />
                 </div>
               ))}
@@ -201,18 +190,25 @@ export default function HomePage() {
       <Footer />
 
       <style>{`
+        /* Kategoritë normale */
         .category-scroll {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
           gap: 12px;
         }
-        .category-item-trending { width: 100%; }
         .category-item { width: 100%; }
+
+        /* Trending — poster i madh */
+        .trending-scroll {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 14px;
+        }
+        .trending-item { width: 100%; }
 
         @media (max-width: 768px) {
           .category-scroll {
             display: flex;
-            flex-direction: row;
             overflow-x: auto;
             gap: 10px;
             padding-bottom: 8px;
@@ -226,9 +222,20 @@ export default function HomePage() {
             min-width: calc(50% - 5px);
             scroll-snap-align: start;
           }
-          .category-item-trending {
-            flex: 0 0 calc(80% - 5px);
-            min-width: calc(80% - 5px);
+
+          .trending-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 12px;
+            padding-bottom: 8px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            grid-template-columns: unset;
+          }
+          .trending-scroll::-webkit-scrollbar { display: none; }
+          .trending-item {
+            flex: 0 0 calc(70% - 6px);
+            min-width: calc(70% - 6px);
             scroll-snap-align: start;
           }
         }
