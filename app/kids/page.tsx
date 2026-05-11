@@ -42,7 +42,7 @@ export default function KidsPage() {
       <Navbar />
 
       {/* Hero banner */}
-      <div style={{ position: 'relative', height: 'clamp(500px, 80vh, 800px)', overflow: 'hidden' }}>
+      <div style={{ position: 'relative', height: 'clamp(380px, 65vh, 650px)', overflow: 'hidden' }}>
         {/* Banner image */}
         <div style={{
           position: 'absolute', inset: 0,
