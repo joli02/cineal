@@ -38,6 +38,14 @@ export default function HomePage() {
     }
   }
 
+  const removeFromContinueWatching = async (movieId: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!user) return
+    await supabase.from('watch_history').delete().eq('user_id', user.id).eq('movie_id', movieId)
+    setContinueWatching(prev => prev.filter(m => m.id !== movieId))
+  }
+
   useEffect(() => {
     async function fetchMovies() {
       try {
@@ -65,11 +73,6 @@ export default function HomePage() {
     genre,
     movies: movies.filter(m => m.genre === genre).slice(0, 10)
   })).filter(g => g.movies.length > 0)
-
-  const formatProgress = (s: number) => {
-    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60)
-    return h > 0 ? `${h}h ${m}min` : `${m} min`
-  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
@@ -131,27 +134,53 @@ export default function HomePage() {
             <div className="trending-scroll">
               {continueWatching.map((m: any) => (
                 <div key={m.id} className="trending-item">
-                  <Link href={`/film/${m.slug}?play=true`} style={{ textDecoration: 'none' }}>
-                    <div style={{ borderRadius: '8px', overflow: 'hidden', background: '#12121a', cursor: 'pointer', position: 'relative' }}>
-                      {m.poster_url
-                        ? <img src={m.poster_url} alt={m.title} style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', display: 'block' }} />
-                        : <div style={{ width: '100%', aspectRatio: '16/9', background: '#1a1a2e' }} />
-                      }
-                      <div style={{ position: 'absolute', bottom: 42, left: 0, right: 0, height: '3px', background: 'rgba(255,255,255,0.2)' }}>
-                        <div style={{ height: '100%', background: '#e50914', width: `${Math.min(100, (m.progress_seconds / 7200) * 100)}%` }} />
+                  <div style={{ position: 'relative' }}>
+                    {/* Butoni X */}
+                    <button
+                      onClick={(e) => removeFromContinueWatching(m.id, e)}
+                      style={{
+                        position: 'absolute', top: '6px', right: '6px', zIndex: 10,
+                        width: '24px', height: '24px', borderRadius: '50%',
+                        background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(255,255,255,0.2)',
+                        color: '#fff', fontSize: '14px', lineHeight: 1,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontFamily: 'sans-serif',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(229,9,20,0.8)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.7)')}
+                    >
+                      ✕
+                    </button>
+
+                    <Link href={`/film/${m.slug}?play=true`} style={{ textDecoration: 'none' }}>
+                      <div style={{ borderRadius: '8px', overflow: 'hidden', background: '#12121a', cursor: 'pointer', position: 'relative' }}>
+                        {m.poster_url
+                          ? <img src={m.poster_url} alt={m.title} style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', display: 'block' }} />
+                          : <div style={{ width: '100%', aspectRatio: '16/9', background: '#1a1a2e' }} />
+                        }
+                        {/* Gradient i zi nga fundi */}
+                        <div style={{
+                          position: 'absolute', bottom: '3px', left: 0, right: 0, height: '60px',
+                          background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%)',
+                          pointerEvents: 'none',
+                        }} />
+                        {/* Progress bar */}
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '3px', background: 'rgba(255,255,255,0.15)' }}>
+                          <div style={{ height: '100%', background: '#e50914', width: `${Math.min(100, (m.progress_seconds / 7200) * 100)}%` }} />
+                        </div>
+                        <div style={{ padding: '8px' }}>
+                          <div style={{ fontSize: '12px', fontWeight: 500, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title_sq || m.title}</div>
+                        </div>
                       </div>
-                      <div style={{ padding: '8px' }}>
-                        <div style={{ fontSize: '12px', fontWeight: 500, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title_sq || m.title}</div>
-                      </div>
-                    </div>
-                  </Link>
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* TRENDING — poster i madh 2/3 */}
+        {/* TRENDING */}
         {trending.length > 0 && (
           <div style={{ marginBottom: '40px' }}>
             <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600, marginBottom: '16px' }}>Trending</h2>
@@ -189,7 +218,6 @@ export default function HomePage() {
       <Footer />
 
       <style>{`
-        /* Kategoritë normale */
         .category-scroll {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -197,7 +225,6 @@ export default function HomePage() {
         }
         .category-item { width: 100%; }
 
-        /* Trending — poster i madh */
         .trending-scroll {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -221,7 +248,6 @@ export default function HomePage() {
             min-width: calc(50% - 5px);
             scroll-snap-align: start;
           }
-
           .trending-scroll {
             display: flex;
             overflow-x: auto;
