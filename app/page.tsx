@@ -166,7 +166,10 @@ export default function HomePage() {
             <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600, marginBottom: '16px' }}>Trending</h2>
             <div className="category-scroll">
               {trending.map((m: any, i: number) => (
-                <div key={m.id} className="category-item-trending">
+                <div key={m.id} {
+  flex: 0 0 calc(80% - 5px);
+  min-width: calc(80% - 5px);
+}
                   <TrendingCard movie={m} index={i} />
                 </div>
               ))}
