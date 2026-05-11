@@ -46,7 +46,7 @@ export default function KidsPage() {
         {/* Banner image */}
         <div style={{
           position: 'absolute', inset: 0,
-          backgroundImage: `url(/kids-banner.jpg)`,
+          backgroundImage: `url(/kids-cinema-watching-movie-with-popcorn.jpg)`,
           backgroundSize: 'cover',
           backgroundPosition: 'center top',
           filter: 'brightness(1)',
