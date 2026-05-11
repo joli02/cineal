@@ -73,17 +73,12 @@ export default function Navbar() {
     { href: '/settings', icon: '⚙️', label: 'Cilësimet' },
   ]
 
-  const links = [
-    { href: '/', label: 'Home' },
-    { href: '/seriale', label: 'Seriale' },
-    { href: '/anime', label: 'Anime' },
-    { href: '/kids', label: 'Kids' },
-    { href: '/vip', label: 'VIP' },
-  ]
+  // Avatar based on gender
+  const avatarSrc = profile?.gender === 'female' ? '/female_icon.svg' : '/male_icon.svg'
 
   return (
     <>
-      <nav style={{ background: 'rgba(10,10,15,0.97)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'sticky', top: 0, zIndex: 100, padding: '0 32px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <nav style={{ background: 'rgba(38,36,36,0.97)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'sticky', top: 0, zIndex: 100, padding: '0 32px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 
         <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
           <img src="/logo.svg" alt="Cineal" style={{ height: '28px', width: 'auto', maxWidth: '120px' }} />
@@ -92,7 +87,6 @@ export default function Navbar() {
         {/* Desktop Links */}
         <ul className="desktop-nav" style={{ display: 'flex', gap: '28px', listStyle: 'none', margin: 0, padding: 0, alignItems: 'center' }}>
 
-          {/* Home */}
           <li>
             <Link href="/" style={{ color: pathname === '/' ? '#fff' : '#b0b0c0', textDecoration: 'none', fontSize: '13px', fontWeight: pathname === '/' ? 500 : 400 }}
               onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
@@ -101,15 +95,12 @@ export default function Navbar() {
             </Link>
           </li>
 
-          {/* Filma — dropdown only, no navigation */}
+          {/* Filma — dropdown only, no navigation, no arrow */}
           <li style={{ position: 'relative' }}
             onMouseEnter={handleFilmaEnter}
             onMouseLeave={handleFilmaLeave}>
-            <span style={{ color: '#b0b0c0', fontSize: '13px', cursor: 'default', userSelect: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ color: '#b0b0c0', fontSize: '13px', cursor: 'default', userSelect: 'none' }}>
               Filma
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
             </span>
 
             {filmaHover && (
@@ -118,7 +109,7 @@ export default function Navbar() {
                 onMouseLeave={handleFilmaLeave}
                 style={{
                   position: 'absolute', top: 'calc(100% + 12px)', left: '50%', transform: 'translateX(-50%)',
-                  background: '#12121a', border: '1px solid rgba(255,255,255,0.1)',
+                  background: '#1a1818', border: '1px solid rgba(255,255,255,0.1)',
                   borderRadius: '10px', padding: '8px 0', minWidth: '180px',
                   boxShadow: '0 8px 32px rgba(0,0,0,0.6)', zIndex: 200,
                 }}>
@@ -135,8 +126,12 @@ export default function Navbar() {
             )}
           </li>
 
-          {/* Other links */}
-          {links.filter(l => l.href !== '/').map(({ href, label }) => (
+          {[
+            { href: '/seriale', label: 'Seriale' },
+            { href: '/anime', label: 'Anime' },
+            { href: '/kids', label: 'Kids' },
+            { href: '/vip', label: 'VIP' },
+          ].map(({ href, label }) => (
             <li key={href}>
               <Link href={href} style={{ color: pathname === href ? '#fff' : '#b0b0c0', textDecoration: 'none', fontSize: '13px', fontWeight: pathname === href ? 500 : 400 }}
                 onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
@@ -168,15 +163,20 @@ export default function Navbar() {
           {user ? (
             <div style={{ position: 'relative' }}>
               <div onClick={() => setDropdownOpen(!dropdownOpen)}
-                style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(229,9,20,0.2)', border: '2px solid rgba(229,9,20,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '18px' }}>
-                {profile?.gender === 'female' ? '👩' : '👤'}
+                style={{ width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', border: '2px solid rgba(229,9,20,0.5)', cursor: 'pointer', background: '#262424' }}>
+                <img src={avatarSrc} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
 
               {dropdownOpen && (
-                <div style={{ position: 'absolute', right: 0, top: '44px', background: '#12121a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '8px', minWidth: '220px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 999 }}>
-                  <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)', marginBottom: '6px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 500, color: '#fff', marginBottom: '4px' }}>{profile?.full_name || user.email?.split('@')[0]}</div>
-                    <div style={{ fontSize: '11px', color: '#6b6b80', marginBottom: '6px' }}>{user.email}</div>
+                <div style={{ position: 'absolute', right: 0, top: '44px', background: '#1a1818', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '8px', minWidth: '220px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 999 }}>
+                  <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <img src={avatarSrc} alt="Avatar" style={{ width: '36px', height: '36px', borderRadius: '50%', border: '2px solid rgba(229,9,20,0.4)' }} />
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 500, color: '#fff' }}>{profile?.full_name || user.email?.split('@')[0]}</div>
+                      <div style={{ fontSize: '11px', color: '#6b6b80' }}>{user.email}</div>
+                    </div>
+                  </div>
+                  <div style={{ padding: '4px 12px 8px' }}>
                     <span style={{ fontSize: '10px', background: `${roleBadge[profile?.role || 'free']}22`, border: `1px solid ${roleBadge[profile?.role || 'free']}44`, color: roleBadge[profile?.role || 'free'], padding: '2px 8px', borderRadius: '10px', fontWeight: 500 }}>
                       {(profile?.role || 'FREE').toUpperCase()}
                     </span>
@@ -224,7 +224,7 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div style={{ position: 'fixed', top: '60px', left: 0, right: 0, bottom: 0, background: 'rgba(10,10,15,0.98)', zIndex: 99, padding: '20px', overflowY: 'auto' }}>
+        <div style={{ position: 'fixed', top: '60px', left: 0, right: 0, bottom: 0, background: 'rgba(38,36,36,0.98)', zIndex: 99, padding: '20px', overflowY: 'auto' }}>
           <Link href="/" onClick={() => setMenuOpen(false)} style={{ display: 'block', padding: '14px 0', fontSize: '18px', color: pathname === '/' ? '#e50914' : '#fff', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>Home</Link>
           <div style={{ padding: '14px 0', fontSize: '18px', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>Filma</div>
           {FILM_CATEGORIES.map(cat => (
