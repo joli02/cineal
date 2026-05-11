@@ -341,7 +341,7 @@ export default function VideoPlayer({ movie, onTimeUpdate }: { movie: Movie, onT
       </div>
 
       {/* Info bar */}
-      <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', color: '#6b6b80', background: '#1a1818' }}>
+      <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', color: '#6b6b80', background: '#0a0a0f' }}>
         {movie.subtitle_url && (
           <span style={{ background: 'rgba(245,166,35,0.12)', border: '1px solid rgba(245,166,35,0.3)', color: '#f5a623', fontSize: '11px', padding: '3px 10px', borderRadius: '20px', fontWeight: 500 }}>
             Titra Shqip
