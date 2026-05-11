@@ -112,66 +112,58 @@ export default function FilmPage() {
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
-      {/* Hero */}
-      <div style={{ position: 'relative', height: 'clamp(200px, 40vh, 400px)', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${movie.backdrop_url || movie.poster_url})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(0.3)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0a0a0f 0%, transparent 60%)' }} />
-      </div>
+      {/* Hero — si home page me gradient nga e majta */}
+      <div style={{ position: 'relative', height: 'clamp(300px, 55vh, 550px)', overflow: 'hidden' }}>
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: `url(${movie.backdrop_url || movie.poster_url})`,
+          backgroundSize: 'cover', backgroundPosition: 'center',
+          filter: 'brightness(0.45)'
+        }} />
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(to right, rgba(10,10,15,0.95) 35%, rgba(10,10,15,0.4) 70%, transparent 100%)'
+        }} />
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(to top, #0a0a0f 0%, transparent 50%)'
+        }} />
 
-      <div style={{ padding: '0 clamp(16px, 4vw, 60px) 60px', marginTop: 'clamp(-60px, -8vw, -100px)', position: 'relative', zIndex: 1 }}>
-
-        <div style={{ display: 'flex', gap: 'clamp(16px, 3vw, 28px)', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          {/* Poster — klikim direkt hap player */}
-          {movie.poster_url && (
-            <div style={{ position: 'relative', flexShrink: 0, cursor: 'pointer' }} onClick={handlePlay}>
-              <img src={movie.poster_url} alt={movie.title}
-                style={{ width: 'clamp(100px, 15vw, 160px)', borderRadius: '8px', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', display: 'block' }} />
-              {/* Play icon overlay */}
-              <div style={{
-                position: 'absolute', inset: 0, borderRadius: '8px',
-                background: 'rgba(10,10,15,0.95)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                opacity: 0, transition: 'opacity 0.2s',
-              }}
-                onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-                onMouseLeave={e => (e.currentTarget.style.opacity = '0')}>
-                <div style={{ width: '44px', height: '44px', background: 'rgba(229,9,20,0.9)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ width: 0, height: 0, borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderLeft: '14px solid #fff', marginLeft: '3px' }} />
-                </div>
-              </div>
-            </div>
+        {/* Info mbi hero */}
+        <div style={{ position: 'relative', zIndex: 1, padding: 'clamp(60px, 10vw, 100px) clamp(20px, 5vw, 60px) 40px', maxWidth: '620px' }}>
+          <div style={{ fontSize: '11px', color: '#e50914', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>
+            {movie.genre}
+          </div>
+          <h1 style={{ fontSize: 'clamp(24px, 5vw, 42px)', fontWeight: 700, lineHeight: 1.1, marginBottom: '12px' }}>
+            {movie.title_sq || movie.title}
+          </h1>
+          <div style={{ display: 'flex', gap: '12px', fontSize: '13px', color: '#b0b0c0', marginBottom: '16px', flexWrap: 'wrap' }}>
+            {movie.year && <span>{movie.year}</span>}
+            {movie.rating && <><span>•</span><span>★ {movie.rating}</span></>}
+            {movie.duration && <><span>•</span><span>{movie.duration}</span></>}
+          </div>
+          {(movie.description_sq || movie.description) && (
+            <p style={{ fontSize: '14px', color: '#b0b0c0', lineHeight: 1.6, marginBottom: '24px', maxWidth: '500px' }}>
+              {(movie.description_sq || movie.description).substring(0, 180)}{(movie.description_sq || movie.description).length > 180 ? '...' : ''}
+            </p>
           )}
-
-          <div style={{ flex: 1, minWidth: '200px', paddingTop: 'clamp(20px, 5vw, 40px)' }}>
-            <h1 style={{ fontSize: 'clamp(20px, 4vw, 34px)', fontWeight: 700, marginBottom: '8px' }}>
-              {movie.title_sq || movie.title}
-            </h1>
-            <div style={{ display: 'flex', gap: '10px', fontSize: '13px', color: '#b0b0c0', marginBottom: '12px', flexWrap: 'wrap' }}>
-              {movie.year && <span>{movie.year}</span>}
-              {movie.genre && <><span>•</span><span>{movie.genre}</span></>}
-              {movie.rating && <><span>•</span><span>★ {movie.rating}</span></>}
-              {movie.duration && <><span>•</span><span>{movie.duration}</span></>}
-            </div>
-            {(movie.description_sq || movie.description) && (
-              <p style={{ fontSize: '14px', color: '#b0b0c0', lineHeight: 1.7, maxWidth: '580px', marginBottom: '20px' }}>
-                {movie.description_sq || movie.description}
-              </p>
-            )}
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              {(movie.video_url || movie.embed_url) && !playing && (
-                <button onClick={handlePlay}
-                  style={{ background: '#e50914', color: '#fff', border: 'none', padding: '11px 26px', borderRadius: '6px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
-                  {savedTime > 30 ? `Vazhdo nga ${formatProgress(savedTime)}` : '▶ Shiko Tani'}
-                </button>
-              )}
-              <button onClick={toggleWatchlist}
-                style={{ background: inWatchlist ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${inWatchlist ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.2)'}`, color: inWatchlist ? '#22c55e' : '#fff', padding: '10px 20px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
-                {inWatchlist ? '✓ Watchlist' : '+ Watchlist'}
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            {(movie.video_url || movie.embed_url) && !playing && (
+              <button onClick={handlePlay}
+                style={{ background: '#e50914', color: '#fff', border: 'none', padding: '11px 26px', borderRadius: '6px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                {savedTime > 30 ? `▶ Vazhdo nga ${formatProgress(savedTime)}` : '▶ Shiko Tani'}
               </button>
-              {msg && <span style={{ fontSize: '12px', color: '#22c55e' }}>{msg}</span>}
-            </div>
+            )}
+            <button onClick={toggleWatchlist}
+              style={{ background: inWatchlist ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.1)', border: `1px solid ${inWatchlist ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.2)'}`, color: inWatchlist ? '#22c55e' : '#fff', padding: '10px 20px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+              {inWatchlist ? '✓ Watchlist' : '+ Watchlist'}
+            </button>
+            {msg && <span style={{ fontSize: '12px', color: '#22c55e', alignSelf: 'center' }}>{msg}</span>}
           </div>
         </div>
+      </div>
+
+      <div style={{ padding: '0 clamp(16px, 4vw, 60px) 60px' }}>
 
         {/* Player */}
         {playing && (movie.video_url || movie.embed_url) && (
