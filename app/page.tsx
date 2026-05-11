@@ -6,12 +6,37 @@ import MovieCard, { TrendingCard } from '@/components/movie/MovieCard'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
-const GENRES = ['Aksion', 'Drama', 'Sci-Fi', 'Thriller', 'Horror', 'Comedy', 'Anime', 'Romance', 'Dokumentar', 'Seriale']
+const GENRES = ['Aksion', 'Drama', 'Sci-Fi', 'Thriller', 'Horror', 'Comedy', 'Anime', 'Romance', 'Dokumentar']
 
 export default function HomePage() {
   const [movies, setMovies] = useState<any[]>([])
   const [trending, setTrending] = useState<any[]>([])
+  const [continueWatching, setContinueWatching] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      if (session?.user) fetchContinueWatching(session.user.id)
+    })
+  }, [])
+
+  async function fetchContinueWatching(userId: string) {
+    const { data } = await supabase
+      .from('watch_history')
+      .select('movie_id, progress_seconds, watched_at, movies(*)')
+      .eq('user_id', userId)
+      .gt('progress_seconds', 30)
+      .order('watched_at', { ascending: false })
+      .limit(10)
+    if (data) {
+      const cwMovies = data
+        .filter((d: any) => d.movies)
+        .map((d: any) => ({ ...d.movies, progress_seconds: d.progress_seconds }))
+      setContinueWatching(cwMovies)
+    }
+  }
 
   useEffect(() => {
     async function fetchMovies() {
@@ -20,6 +45,7 @@ export default function HomePage() {
           .from('movies')
           .select('*')
           .eq('status', 'live')
+          .eq('is_kids', false)
           .order('created_at', { ascending: false })
           .limit(100)
         if (data) {
@@ -27,9 +53,7 @@ export default function HomePage() {
           const tr = data.filter((m: any) => m.is_trending)
           setTrending(tr.length > 0 ? tr.slice(0, 5) : data.slice(0, 5))
         }
-      } catch (e) {
-        console.error(e)
-      }
+      } catch (e) { console.error(e) }
       setLoading(false)
     }
     fetchMovies()
@@ -42,8 +66,13 @@ export default function HomePage() {
     movies: movies.filter(m => m.genre === genre).slice(0, 10)
   })).filter(g => g.movies.length > 0)
 
+  const formatProgress = (s: number) => {
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60)
+    return h > 0 ? `${h}h ${m}min` : `${m} min`
+  }
+
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#262424', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
       {/* HERO */}
@@ -55,14 +84,9 @@ export default function HomePage() {
             backgroundSize: 'cover', backgroundPosition: 'center',
             filter: 'brightness(0.4)'
           }} />
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(to right, rgba(10,10,15,0.95) 40%, transparent 100%)'
-          }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(38,36,36,0.95) 40%, transparent 100%)' }} />
           <div style={{ position: 'relative', zIndex: 1, padding: 'clamp(60px, 10vw, 120px) clamp(20px, 5vw, 60px) 40px', maxWidth: '600px' }}>
-            <div style={{ fontSize: '11px', color: '#e50914', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>
-              Film i Ri
-            </div>
+            <div style={{ fontSize: '11px', color: '#e50914', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>Film i Ri</div>
             <h1 style={{ fontSize: 'clamp(24px, 5vw, 42px)', fontWeight: 700, lineHeight: 1.1, marginBottom: '12px' }}>
               {featured.title_sq || featured.title}
             </h1>
@@ -78,17 +102,10 @@ export default function HomePage() {
               </p>
             )}
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <Link href={`/film/${featured.slug}?play=true`} style={{
-                background: '#e50914', color: '#fff', padding: '10px 24px',
-                borderRadius: '5px', textDecoration: 'none', fontWeight: 600, fontSize: '14px'
-              }}>
+              <Link href={`/film/${featured.slug}?play=true`} style={{ background: '#e50914', color: '#fff', padding: '10px 24px', borderRadius: '5px', textDecoration: 'none', fontWeight: 600, fontSize: '14px' }}>
                 ▶ Shiko Tani
               </Link>
-              <Link href={`/film/${featured.slug}`} style={{
-                background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '10px 24px',
-                borderRadius: '5px', textDecoration: 'none', fontWeight: 500, fontSize: '14px',
-                border: '1px solid rgba(255,255,255,0.15)'
-              }}>
+              <Link href={`/film/${featured.slug}`} style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '10px 24px', borderRadius: '5px', textDecoration: 'none', fontWeight: 500, fontSize: '14px', border: '1px solid rgba(255,255,255,0.15)' }}>
                 + Më Shumë
               </Link>
             </div>
@@ -98,17 +115,38 @@ export default function HomePage() {
 
       <div style={{ padding: 'clamp(20px, 4vw, 40px) clamp(16px, 4vw, 60px)' }}>
 
-        {loading && (
-          <div style={{ textAlign: 'center', padding: '60px', color: '#6b6b80' }}>
-            Duke ngarkuar filmat...
-          </div>
-        )}
+        {loading && <div style={{ textAlign: 'center', padding: '60px', color: '#6b6b80' }}>Duke ngarkuar filmat...</div>}
 
-        {!loading && movies.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '60px' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎬</div>
-            <div style={{ fontSize: '18px', fontWeight: 500, marginBottom: '8px' }}>Nuk ka filma akoma</div>
-            <div style={{ fontSize: '14px', color: '#6b6b80' }}>Shto filmat e parë nga Admin Panel</div>
+        {/* CONTINUE WATCHING */}
+        {user && continueWatching.length > 0 && (
+          <div style={{ marginBottom: '40px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>Vazhdo Shikimin</h2>
+            </div>
+            <div className="category-scroll">
+              {continueWatching.map((m: any) => (
+                <div key={m.id} className="category-item">
+                  <Link href={`/film/${m.slug}?play=true`} style={{ textDecoration: 'none' }}>
+                    <div style={{ borderRadius: '8px', overflow: 'hidden', background: '#1a1818', cursor: 'pointer', position: 'relative' }}>
+                      {m.poster_url
+                        ? <img src={m.poster_url} alt={m.title} style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', display: 'block' }} />
+                        : <div style={{ width: '100%', aspectRatio: '2/3', background: '#2a2020' }} />
+                      }
+                      {/* Progress bar */}
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '3px', background: 'rgba(255,255,255,0.2)' }}>
+                        <div style={{ height: '100%', background: '#e50914', width: `${Math.min(100, (m.progress_seconds / (m.duration_seconds || 7200)) * 100)}%` }} />
+                      </div>
+                      <div style={{ padding: '8px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 500, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title_sq || m.title}</div>
+                        <div style={{ fontSize: '11px', color: '#e50914', marginTop: '2px' }}>
+                          Nga {formatProgress(m.progress_seconds)}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -116,10 +154,8 @@ export default function HomePage() {
         {trending.length > 0 && (
           <div style={{ marginBottom: '40px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>TRENDING</h2>
-              <Link href="/trending" style={{ fontSize: '13px', color: '#e50914', textDecoration: 'none' }}>Shiko të gjitha →</Link>
+              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>Trending</h2>
             </div>
-            {/* Desktop grid / Mobile scroll */}
             <div className="category-scroll">
               {trending.map((m: any, i: number) => (
                 <div key={m.id} className="category-item-trending">
@@ -130,32 +166,12 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* TË GJITHA FILMAT */}
-        {movies.length > 0 && (
-          <div style={{ marginBottom: '40px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>Të Gjitha Filmat</h2>
-              <Link href="/filma" style={{ fontSize: '13px', color: '#e50914', textDecoration: 'none' }}>Shiko të gjitha →</Link>
-            </div>
-            <div className="category-scroll">
-              {movies.slice(0, 10).map((m: any) => (
-                <div key={m.id} className="category-item">
-                  <MovieCard movie={m} />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* SIPAS ZHANRIT */}
         {moviesByGenre.map(({ genre, movies: gMovies }) => (
           <div key={genre} style={{ marginBottom: '40px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>
-                {genre}
-              </h2>
-              <Link href={genre === 'Anime' ? '/anime' : genre === 'Seriale' ? '/seriale' : `/filma`}
-                style={{ fontSize: '13px', color: '#e50914', textDecoration: 'none' }}>
+              <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600 }}>{genre}</h2>
+              <Link href={`/filma?zhanri=${genre}`} style={{ fontSize: '13px', color: '#e50914', textDecoration: 'none' }}>
                 Shiko të gjitha →
               </Link>
             </div>
@@ -174,20 +190,14 @@ export default function HomePage() {
       <Footer />
 
       <style>{`
-        /* Desktop: grid normale */
         .category-scroll {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
           gap: 12px;
         }
-        .category-item-trending {
-          width: 100%;
-        }
-        .category-item {
-          width: 100%;
-        }
+        .category-item-trending { width: 100%; }
+        .category-item { width: 100%; }
 
-        /* Mobile: scroll horizontal, 2 posterat visible */
         @media (max-width: 768px) {
           .category-scroll {
             display: flex;
@@ -199,9 +209,7 @@ export default function HomePage() {
             -webkit-overflow-scrolling: touch;
             grid-template-columns: unset;
           }
-          .category-scroll::-webkit-scrollbar {
-            display: none;
-          }
+          .category-scroll::-webkit-scrollbar { display: none; }
           .category-item {
             flex: 0 0 calc(50% - 5px);
             min-width: calc(50% - 5px);
