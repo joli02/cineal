@@ -112,28 +112,22 @@ export default function FilmPage() {
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
-      {/* Hero — imazhi i plotë, zbehje nga e majta */}
       <div style={{ position: 'relative', height: 'clamp(500px, 80vh, 800px)', overflow: 'hidden' }}>
-        {/* Imazhi i plotë pa filter */}
         <div style={{
           position: 'absolute', inset: 0,
           backgroundImage: `url(${movie.backdrop_url || movie.poster_url})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundSize: 'cover', backgroundPosition: 'center',
           filter: 'brightness(1)',
         }} />
-        {/* Gradient nga e majta — errësohet aty ku është teksti */}
         <div style={{
           position: 'absolute', inset: 0,
           background: 'linear-gradient(to right, rgba(10,10,15,0.98) 30%, rgba(10,10,15,0.7) 55%, rgba(10,10,15,0.2) 80%, transparent 100%)',
         }} />
-        {/* Gradient poshtë — kalon te background */}
         <div style={{
           position: 'absolute', inset: 0,
           background: 'linear-gradient(to top, #0a0a0f 0%, transparent 50%)',
         }} />
 
-        {/* Info mbi hero */}
         <div style={{ position: 'relative', zIndex: 1, padding: 'clamp(60px, 10vw, 100px) clamp(20px, 5vw, 60px) 40px', maxWidth: '580px' }}>
           <div style={{ fontSize: '11px', color: '#e50914', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>
             {movie.genre}
@@ -168,15 +162,13 @@ export default function FilmPage() {
       </div>
 
       <div style={{ padding: '0 clamp(16px, 4vw, 60px) 60px' }}>
-
-        {/* Player */}
         {playing && (movie.video_url || movie.embed_url) && (
           <div style={{ marginTop: '28px', maxWidth: '960px' }}>
-           <VideoPlayer movie={movie} onTimeUpdate={handleTimeUpdate} startTime={savedTime} />
+            {/* Kalon savedTime te VideoPlayer */}
+            <VideoPlayer movie={movie} onTimeUpdate={handleTimeUpdate} startTime={savedTime} />
           </div>
         )}
 
-        {/* Similar movies */}
         {similar.length > 0 && (
           <div style={{ marginTop: '48px' }}>
             <h2 style={{ fontSize: 'clamp(16px, 3vw, 20px)', fontWeight: 600, marginBottom: '16px' }}>Filma të Ngjashëm</h2>
