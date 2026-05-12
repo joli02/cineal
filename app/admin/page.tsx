@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 const NAV = [
   { id: 'dashboard', icon: '⊞', label: 'Dashboard' },
   { id: 'add', icon: '+', label: 'Shto Film' },
+  { id: 'add-kids', icon: '🧒', label: 'Shto Film Kids' },
   { id: 'movies', icon: '▶', label: 'Filmat' },
   { id: 'users', icon: '◉', label: 'Userat' },
   { id: 'titrat', icon: '◎', label: 'Titrat' },
@@ -22,6 +23,12 @@ const GENRE_MAP: Record<number, string> = {
   9648: 'Thriller', 10749: 'Romance', 878: 'Sci-Fi',
   10770: 'Drama', 53: 'Thriller', 10752: 'Aksion', 37: 'Aksion'
 }
+
+const KIDS_CATEGORIES = [
+  { id: '2-6', label: 'Për 2–6 Vjeç' },
+  { id: '7plus', label: 'Për 7+' },
+  { id: 'familje', label: 'Familje' },
+]
 
 // ─── VTT helpers ────────────────────────────────────────────────
 function parseVTT(content: string) {
@@ -52,10 +59,6 @@ function blocksToText(blocks: string[][]) {
   return blocks.map(b => b.join('\n')).join('\n\n')
 }
 
-function isTimestamp(line: string) {
-  return /\d{2}:\d{2}:\d{2}[.,]\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}[.,]\d{3}/.test(line)
-}
-
 // ─── OpenAI translate me retry ───────────────────────────────────
 async function translateChunkOnce(chunk: string, context: string, apiKey: string): Promise<string> {
   const prompt = `Ti je përkthyes profesionist i titrave të filmit nga anglisht në shqip standarde. Ke përvojë të gjerë me filma dhe e njeh mirë kulturën shqiptare dhe angleze.
@@ -69,45 +72,12 @@ KONTEKSTI I FILMIT: ${context}
 4. Kthe VETËM VTT-në e përkthyer — zero komente, zero shpjegime
 
 ═══ RREGULLAT E GJUHËS ═══
-5. Shprehjet idiomatike — ADAPTO, mos përkthe fjalë-për-fjalë:
-   - "cut me some slack" → "më lëre rehat" / "bëj pak durim"
-   - "barking up the wrong tree" → "po kërkon gabim" / "je në rrugë të gabuar"
-   - "going downtown" (polici) → "po të çoj në komisariat"
-   - "lay low" → "fshihu" / "rri i qetë"
-   - "bailed on us" → "na braktisi" / "na la baltë"
-   - "get some shut-eye" → "flij pak" / "merr gjumë"
-   - "jack squat" → "asgjë fare" / "zero"
-   - "knee-high to a grasshopper" → "që kur ishim fëmijë" / "që në vegjëli"
-   - "don't jinx it" → "mos e prish me sy" / "mos e sysh"
-   - "acting shady" → "ka vepruar dyshimtë" / "ka bërë lëvizje të çuditshme"
-
-6. Slang dhe humor — ruaj tonin, adapto:
-   - Fjalë komike si "kaboom", "dork", "holy moly" → gjej ekuivalentin shqip natyral
-   - "dork" → "torollak" / "nenez" (JO "budalla")
-   - "holy moly" → "o zot i madh" / "çfarë dreqin"
-   - Humor i thatë → ruaj shkurtësinë dhe tonin
-
-7. Termet teknike dhe shkencorë:
-   - Lëri anglisht nëse nuk kanë ekuivalent të mirë shqip: "quantum entanglement", "neural network"
-   - Shto sqarim vetëm nëse konteksti e kërkon
-
-8. Referencat kulturore:
-   - Emra filmash, personazhesh, markash → MOS i ndrysho (Han Solo, FBI, Murphy's law)
-   - "Murphy's law" → "Ligji i Murphyt" ose lëre anglisht
-
-9. Efektet zanore dhe didaskali:
-   - [Explosion] → [Shpërthim] ose lëre anglisht — zgjidh bazuar në kontekst
-   - [Narrator] → [Narratori]
-   - Ruan kllapat [] gjithmonë
-
-10. Dialog i shkurtër dhe dramatik:
-    - Ruaj shkurtësinë — mos shto fjalë pa nevojë
-    - "I know." → "E di." (jo "Unë e di këtë gjë")
-    - Thirrjet si "Roger that" → "Kuptova" / "Marrë"
-
-11. Personazhet dhe emrat:
-    - Emrat e personazheve MOS i ndrysho kurrë (Marco, Sarah etj.)
-    - Titujt si "detective" → "detektiv"
+5. Shprehjet idiomatike — ADAPTO, mos përkthe fjalë-për-fjalë
+6. Slang dhe humor — ruaj tonin, adapto
+7. Termet teknike dhe shkencorë — lëri anglisht nëse nuk kanë ekuivalent
+8. Referencat kulturore — emra filmash, personazhesh, markash MOS i ndrysho
+9. Dialog i shkurtër dhe dramatik — ruaj shkurtësinë
+10. Personazhet dhe emrat MOS i ndrysho kurrë
 
 VTT PER PERKTHIM:
 ${chunk}`
@@ -130,7 +100,6 @@ ${chunk}`
   return data.choices[0]?.message?.content || ''
 }
 
-// Retry automatik — provo 3 herë nëse dështon
 async function translateChunk(chunk: string, context: string, apiKey: string, retries = 3): Promise<string> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
@@ -139,29 +108,21 @@ async function translateChunk(chunk: string, context: string, apiKey: string, re
       throw new Error('Rezultat bosh')
     } catch (e: any) {
       if (attempt === retries) throw e
-      // Prit para riproces: 2s, 4s, 6s
       await new Promise(r => setTimeout(r, attempt * 2000))
     }
   }
-  return chunk // Kthe origjinalin nëse dështon
+  return chunk
 }
 
-export default function AdminPage() {
-  const [active, setActive] = useState('dashboard')
-  const [loading, setLoading] = useState(false)
-  const [toast, setToast] = useState('')
-  const [toastErr, setToastErr] = useState(false)
-
-  const [stats, setStats] = useState({ movies: 0, users: 0, views: 0, vipUsers: 0 })
-
-  // TMDB
+// ─── Shared TMDB search hook logic ───────────────────────────────
+function useTMDB() {
   const [tmdbQuery, setTmdbQuery] = useState('')
   const [tmdbResults, setTmdbResults] = useState<any[]>([])
   const [tmdbSearching, setTmdbSearching] = useState(false)
   const [selectedMovie, setSelectedMovie] = useState<any>(null)
   const searchTimer = useRef<any>(null)
 
-  // Add form
+  // form fields
   const [title, setTitle] = useState('')
   const [titleSq, setTitleSq] = useState('')
   const [year, setYear] = useState('')
@@ -173,9 +134,86 @@ export default function AdminPage() {
   const [posterUrl, setPosterUrl] = useState('')
   const [backdropUrl, setBackdropUrl] = useState('')
   const [subtitleUrl, setSubtitleUrl] = useState('')
+  const [tmdbId, setTmdbId] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!tmdbQuery.trim() || tmdbQuery.length < 2) { setTmdbResults([]); return }
+    clearTimeout(searchTimer.current)
+    searchTimer.current = setTimeout(() => searchTMDB(tmdbQuery), 400)
+    return () => clearTimeout(searchTimer.current)
+  }, [tmdbQuery])
+
+  async function searchTMDB(query: string) {
+    setTmdbSearching(true)
+    try {
+      const res = await fetch(`${TMDB_BASE}/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=en-US`)
+      const data = await res.json()
+      setTmdbResults(data.results?.slice(0, 6) || [])
+    } catch { setTmdbResults([]) }
+    setTmdbSearching(false)
+  }
+
+  async function selectTMDBMovie(movie: any, showToast: (m: string, e?: boolean) => void) {
+    setTmdbSearching(true)
+    setTmdbResults([])
+    setTmdbQuery('')
+    try {
+      const res = await fetch(`${TMDB_BASE}/movie/${movie.id}?api_key=${TMDB_KEY}&language=en-US`)
+      const d = await res.json()
+      const genreId = d.genres?.[0]?.id
+      const mins = d.runtime || 0
+      const h = Math.floor(mins / 60), m = mins % 60
+      setSelectedMovie(d)
+      setTitle(d.title || '')
+      setTitleSq(d.title || '')
+      setYear(d.release_date?.split('-')[0] || '')
+      setGenre(GENRE_MAP[genreId] || 'Drama')
+      setDuration(h > 0 ? `${h}h ${m}min` : `${m}min`)
+      setRating(d.vote_average ? d.vote_average.toFixed(1) : '')
+      setDescription(d.overview || '')
+      setPosterUrl(d.poster_path ? `${TMDB_IMG}/w500${d.poster_path}` : '')
+      setBackdropUrl(d.backdrop_path ? `${TMDB_IMG}/original${d.backdrop_path}` : '')
+      setTmdbId(d.id)
+    } catch { showToast('Gabim me TMDB!', true) }
+    setTmdbSearching(false)
+  }
+
+  function reset() {
+    setTitle(''); setTitleSq(''); setYear(''); setGenre('Aksion')
+    setDuration(''); setRating(''); setDescription(''); setVideoUrl('')
+    setPosterUrl(''); setBackdropUrl(''); setSubtitleUrl('')
+    setSelectedMovie(null); setTmdbId(null); setTmdbQuery('')
+  }
+
+  return {
+    tmdbQuery, setTmdbQuery, tmdbResults, setTmdbResults,
+    tmdbSearching, selectedMovie, setSelectedMovie, setTmdbId,
+    selectTMDBMovie,
+    title, setTitle, titleSq, setTitleSq,
+    year, setYear, genre, setGenre,
+    duration, setDuration, rating, setRating,
+    description, setDescription, videoUrl, setVideoUrl,
+    posterUrl, setPosterUrl, backdropUrl, setBackdropUrl,
+    subtitleUrl, setSubtitleUrl, tmdbId, reset,
+  }
+}
+
+export default function AdminPage() {
+  const [active, setActive] = useState('dashboard')
+  const [loading, setLoading] = useState(false)
+  const [toast, setToast] = useState('')
+  const [toastErr, setToastErr] = useState(false)
+
+  const [stats, setStats] = useState({ movies: 0, users: 0, views: 0, vipUsers: 0 })
+
+  // ── Shto Film (normal) ──
+  const add = useTMDB()
   const [isTrending, setIsTrending] = useState(false)
   const [isFeatured, setIsFeatured] = useState(false)
-  const [tmdbId, setTmdbId] = useState<number | null>(null)
+
+  // ── Shto Film Kids ──
+  const kids = useTMDB()
+  const [kidsCategory, setKidsCategory] = useState<string[]>([])
 
   // Movies
   const [movies, setMovies] = useState<any[]>([])
@@ -212,48 +250,6 @@ export default function AdminPage() {
     if (active === 'dashboard') { fetchStats(); fetchMovies(); fetchUsers() }
   }, [active])
 
-  useEffect(() => {
-    if (!tmdbQuery.trim() || tmdbQuery.length < 2) { setTmdbResults([]); return }
-    clearTimeout(searchTimer.current)
-    searchTimer.current = setTimeout(() => searchTMDB(tmdbQuery), 400)
-    return () => clearTimeout(searchTimer.current)
-  }, [tmdbQuery])
-
-  async function searchTMDB(query: string) {
-    setTmdbSearching(true)
-    try {
-      const res = await fetch(`${TMDB_BASE}/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&language=en-US`)
-      const data = await res.json()
-      setTmdbResults(data.results?.slice(0, 6) || [])
-    } catch { setTmdbResults([]) }
-    setTmdbSearching(false)
-  }
-
-  async function selectTMDBMovie(movie: any) {
-    setTmdbSearching(true)
-    setTmdbResults([])
-    setTmdbQuery('')
-    try {
-      const res = await fetch(`${TMDB_BASE}/movie/${movie.id}?api_key=${TMDB_KEY}&language=en-US`)
-      const d = await res.json()
-      const genreId = d.genres?.[0]?.id
-      const mins = d.runtime || 0
-      const h = Math.floor(mins / 60), m = mins % 60
-      setSelectedMovie(d)
-      setTitle(d.title || '')
-      setTitleSq(d.title || '')
-      setYear(d.release_date?.split('-')[0] || '')
-      setGenre(GENRE_MAP[genreId] || 'Drama')
-      setDuration(h > 0 ? `${h}h ${m}min` : `${m}min`)
-      setRating(d.vote_average ? d.vote_average.toFixed(1) : '')
-      setDescription(d.overview || '')
-      setPosterUrl(d.poster_path ? `${TMDB_IMG}/w500${d.poster_path}` : '')
-      setBackdropUrl(d.backdrop_path ? `${TMDB_IMG}/original${d.backdrop_path}` : '')
-      setTmdbId(d.id)
-    } catch { showToast('Gabim me TMDB!', true) }
-    setTmdbSearching(false)
-  }
-
   async function fetchStats() {
     const { count: mc } = await supabase.from('movies').select('*', { count: 'exact', head: true })
     const { count: uc } = await supabase.from('profiles').select('*', { count: 'exact', head: true })
@@ -280,31 +276,54 @@ export default function AdminPage() {
 
   const slugify = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
-  const resetForm = () => {
-    setTitle(''); setTitleSq(''); setYear(''); setGenre('Aksion')
-    setDuration(''); setRating(''); setDescription(''); setVideoUrl('')
-    setPosterUrl(''); setBackdropUrl(''); setSubtitleUrl('')
-    setIsTrending(false); setIsFeatured(false)
-    setSelectedMovie(null); setTmdbId(null); setTmdbQuery('')
-  }
-
+  // ── Handle Add normal ──
   const handleAdd = async () => {
-    if (!title.trim()) { showToast('Titulli është i detyrueshëm!', true); return }
-    if (!videoUrl.trim()) { showToast('Video URL është e detyrueshme!', true); return }
+    if (!add.title.trim()) { showToast('Titulli është i detyrueshëm!', true); return }
+    if (!add.videoUrl.trim()) { showToast('Video URL është e detyrueshme!', true); return }
     setLoading(true)
     try {
       const { error } = await supabase.from('movies').insert({
-        title: title.trim(), title_sq: titleSq.trim() || title.trim(),
-        slug: slugify(title), year: year ? parseInt(year) : null,
-        genre, duration: duration || null, rating: rating ? parseFloat(rating) : null,
-        description: description || null, video_url: videoUrl.trim(),
-        poster_url: posterUrl || null, backdrop_url: backdropUrl || null,
-        subtitle_url: subtitleUrl || null, is_trending: isTrending,
-        is_featured: isFeatured, status: 'live', views: 0, tmdb_id: tmdbId,
+        title: add.title.trim(), title_sq: add.titleSq.trim() || add.title.trim(),
+        slug: slugify(add.title), year: add.year ? parseInt(add.year) : null,
+        genre: add.genre, duration: add.duration || null,
+        rating: add.rating ? parseFloat(add.rating) : null,
+        description: add.description || null, video_url: add.videoUrl.trim(),
+        poster_url: add.posterUrl || null, backdrop_url: add.backdropUrl || null,
+        subtitle_url: add.subtitleUrl || null, is_trending: isTrending,
+        is_featured: isFeatured, status: 'live', views: 0, tmdb_id: add.tmdbId,
+        is_kids: false,
       })
       if (error) throw error
-      showToast(`"${title}" u shtua me sukses!`)
-      resetForm(); fetchStats()
+      showToast(`"${add.title}" u shtua me sukses!`)
+      add.reset(); setIsTrending(false); setIsFeatured(false); fetchStats()
+    } catch (e: any) { showToast(e.message, true) }
+    setLoading(false)
+  }
+
+  // ── Handle Add Kids ──
+  const handleAddKids = async () => {
+    if (!kids.title.trim()) { showToast('Titulli është i detyrueshëm!', true); return }
+    if (!kids.videoUrl.trim()) { showToast('Video URL është e detyrueshme!', true); return }
+    if (kidsCategory.length === 0) { showToast('Zgjidh të paktën një kategori!', true); return }
+    setLoading(true)
+    try {
+      const { error } = await supabase.from('movies').insert({
+        title: kids.title.trim(), title_sq: kids.titleSq.trim() || kids.title.trim(),
+        slug: slugify(kids.title), year: kids.year ? parseInt(kids.year) : null,
+        genre: kids.genre, duration: kids.duration || null,
+        rating: kids.rating ? parseFloat(kids.rating) : null,
+        description: kids.description || null, video_url: kids.videoUrl.trim(),
+        poster_url: kids.posterUrl || null, backdrop_url: kids.backdropUrl || null,
+        subtitle_url: kids.subtitleUrl || null,
+        is_trending: false, is_featured: false,
+        status: 'live', views: 0, tmdb_id: kids.tmdbId,
+        is_kids: true,
+        kids_category: kidsCategory[0], // kategoria kryesore
+        kids_categories: kidsCategory,  // të gjitha kategoritë (array)
+      })
+      if (error) throw error
+      showToast(`"${kids.title}" u shtua te Kids me sukses!`)
+      kids.reset(); setKidsCategory([]); fetchStats()
     } catch (e: any) { showToast(e.message, true) }
     setLoading(false)
   }
@@ -357,7 +376,7 @@ export default function AdminPage() {
     fetchUsers()
   }
 
-  // ─── Titrat translate ──────────────────────────────────────────
+  // ─── Titrat ───────────────────────────────────────────────────
   const handleTranslate = async () => {
     if (!vttFile) { showToast('Ngarko skedarin .vtt!', true); return }
     if (!vttApiKey.trim()) { showToast('Shto OpenAI API Key!', true); return }
@@ -371,66 +390,48 @@ export default function AdminPage() {
     try {
       const text = await vttFile.text()
       const blocks = parseVTT(text)
-
-      // Hiq header WEBVTT
-      const headerBlocks = blocks.filter(b => b[0]?.trim() === 'WEBVTT' || b[0]?.startsWith('WEBVTT'))
       const contentBlocks = blocks.filter(b => !b[0]?.startsWith('WEBVTT'))
-
       const chunks = chunkBlocks(contentBlocks, 50)
       setVttTotal(chunks.length)
       setVttStatus(`Duke ndarë në ${chunks.length} copa...`)
 
       const translatedChunks: string[] = []
-
       for (let i = 0; i < chunks.length; i++) {
         setVttProgress(i + 1)
         setVttStatus(`Duke përkthyer copën ${i + 1} nga ${chunks.length}...`)
-
         const chunkText = blocksToText(chunks[i])
         try {
           const translated = await translateChunk(chunkText, vttContext, vttApiKey.trim())
           translatedChunks.push(translated.trim())
-        } catch (e: any) {
-          // Nëse copa dështon, ruaj origjinalin dhe vazhdo
+        } catch {
           translatedChunks.push(chunkText)
-          console.warn(`Copa ${i+1} dështoi, u ruajt origjinali:`, e.message)
         }
-
-        // Pritje 500ms midis copave për të shmangur rate limit
         if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 500))
       }
 
       const finalVtt = 'WEBVTT\n\n' + translatedChunks.join('\n\n')
       setVttResult(finalVtt)
-setVttStatus('Perkthimi përfundoi!')
-showToast('Titrat u përkthyen me sukses!')
+      setVttStatus('Perkthimi përfundoi!')
+      showToast('Titrat u përkthyen me sukses!')
 
-// Ngarko automatikisht te Bunny
-setVttUploading(true)
-setVttUploadedUrl('')
-try {
-  const autoFileName = vttFileName
-    ? vttFileName.replace(/\.(vtt|srt)$/i, '-sq.vtt')
-    : 'titrat-sq.vtt'
-  const autoBlob = new Blob([finalVtt], { type: 'text/vtt' })
-  const autoRes = await fetch(`/api/bunny-upload?filename=${encodeURIComponent(autoFileName)}`, {
-    method: 'POST',
-    body: autoBlob,
-    headers: { 'Content-Type': 'text/vtt' },
-  })
-  const autoData = await autoRes.json()
-  if (!autoRes.ok) throw new Error(autoData.error || 'Upload dështoi')
-  setVttUploadedUrl(autoData.url)
-  showToast('Titrat u ngarkuan te Bunny CDN!')
-} catch (e: any) {
-  showToast('Upload dështoi: ' + e.message, true)
-}
-setVttUploading(false)
+      setVttUploading(true)
+      setVttUploadedUrl('')
+      try {
+        const autoFileName = vttFileName ? vttFileName.replace(/\.(vtt|srt)$/i, '-sq.vtt') : 'titrat-sq.vtt'
+        const autoBlob = new Blob([finalVtt], { type: 'text/vtt' })
+        const autoRes = await fetch(`/api/bunny-upload?filename=${encodeURIComponent(autoFileName)}`, {
+          method: 'POST', body: autoBlob, headers: { 'Content-Type': 'text/vtt' },
+        })
+        const autoData = await autoRes.json()
+        if (!autoRes.ok) throw new Error(autoData.error || 'Upload dështoi')
+        setVttUploadedUrl(autoData.url)
+        showToast('Titrat u ngarkuan te Bunny CDN!')
+      } catch (e: any) { showToast('Upload dështoi: ' + e.message, true) }
+      setVttUploading(false)
     } catch (e: any) {
       showToast(e.message || 'Gabim gjatë perkthimit!', true)
       setVttStatus('Gabim!')
     }
-
     setVttTranslating(false)
   }
 
@@ -450,23 +451,16 @@ setVttUploading(false)
     setVttUploading(true)
     setVttUploadedUrl('')
     try {
-      const fileName = vttFileName
-        ? vttFileName.replace(/\.(vtt|srt)$/i, '-sq.vtt')
-        : 'titrat-sq.vtt'
+      const fileName = vttFileName ? vttFileName.replace(/\.(vtt|srt)$/i, '-sq.vtt') : 'titrat-sq.vtt'
       const blob = new Blob([vttResult], { type: 'text/vtt' })
-
       const res = await fetch(`/api/bunny-upload?filename=${encodeURIComponent(fileName)}`, {
-        method: 'POST',
-        body: blob,
-        headers: { 'Content-Type': 'text/vtt' },
+        method: 'POST', body: blob, headers: { 'Content-Type': 'text/vtt' },
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Upload dështoi')
       setVttUploadedUrl(data.url)
       showToast('Titrat u ngarkuan te Bunny CDN!')
-    } catch (e: any) {
-      showToast(e.message || 'Gabim gjatë ngarkimit!', true)
-    }
+    } catch (e: any) { showToast(e.message || 'Gabim gjatë ngarkimit!', true) }
     setVttUploading(false)
   }
 
@@ -507,6 +501,52 @@ setVttUploading(false)
     color: active === id ? '#fff' : '#6b6b80',
   })
 
+  // ── TMDB Search Block (shared UI) ──────────────────────────────
+  const TMDBSearchBlock = ({ hook, showToastFn }: { hook: ReturnType<typeof useTMDB>, showToastFn: (m: string, e?: boolean) => void }) => (
+    <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '20px', marginBottom: '24px' }}>
+      <div style={{ fontSize: '11px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>
+        Kërko filmin — të dhënat plotësohen automatikisht
+      </div>
+      <div style={{ position: 'relative' }}>
+        <input value={hook.tmdbQuery} onChange={e => hook.setTmdbQuery(e.target.value)}
+          placeholder="Shkruaj emrin e filmit anglisht... (p.sh. Inception)"
+          style={{ ...inp, paddingLeft: '40px' }} />
+        <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px', color: '#6b6b80' }}>
+          {hook.tmdbSearching ? '⟳' : '⌕'}
+        </span>
+      </div>
+      {hook.tmdbResults.length > 0 && (
+        <div style={{ marginTop: '8px', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', overflow: 'hidden' }}>
+          {hook.tmdbResults.map((m, i) => (
+            <div key={m.id} onClick={() => hook.selectTMDBMovie(m, showToastFn)}
+              style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', cursor: 'pointer', borderBottom: i < hook.tmdbResults.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(229,9,20,0.08)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+              {m.poster_path
+                ? <img src={`${TMDB_IMG}/w92${m.poster_path}`} alt={m.title} style={{ width: '32px', height: '48px', objectFit: 'cover', borderRadius: '3px', flexShrink: 0 }} />
+                : <div style={{ width: '32px', height: '48px', background: '#1a1a2e', borderRadius: '3px', flexShrink: 0 }} />}
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 500 }}>{m.title}</div>
+                <div style={{ fontSize: '11px', color: '#6b6b80' }}>{m.release_date?.split('-')[0]} · ⭐ {m.vote_average?.toFixed(1)}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {hook.selectedMovie && (
+        <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '8px', padding: '10px 14px' }}>
+          {hook.selectedMovie.poster_path && <img src={`${TMDB_IMG}/w92${hook.selectedMovie.poster_path}`} alt={hook.selectedMovie.title} style={{ width: '32px', height: '48px', objectFit: 'cover', borderRadius: '3px' }} />}
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '13px', fontWeight: 500, color: '#22c55e' }}>{hook.selectedMovie.title}</div>
+            <div style={{ fontSize: '11px', color: '#6b6b80' }}>Të dhënat u plotësuan automatikisht nga TMDB</div>
+          </div>
+          <button onClick={() => { hook.setSelectedMovie(null); hook.setTmdbId(null) }}
+            style={{ background: 'none', border: 'none', color: '#6b6b80', cursor: 'pointer', fontSize: '16px' }}>✕</button>
+        </div>
+      )}
+    </div>
+  )
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', minHeight: '100vh', background: '#0a0a0f', color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
 
@@ -522,8 +562,11 @@ setVttUploading(false)
           {NAV.map(item => (
             <div key={item.id} onClick={() => setActive(item.id)}
               style={{ ...s(item.id), display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 20px', fontSize: '13px', cursor: 'pointer' }}>
-              <span style={{ opacity: 0.6, fontSize: '13px' }}>{item.icon}</span>
+              <span style={{ opacity: 0.7, fontSize: '13px' }}>{item.icon}</span>
               <span>{item.label}</span>
+              {item.id === 'add-kids' && (
+                <span style={{ fontSize: '9px', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', color: '#3b82f6', padding: '1px 6px', borderRadius: '8px', marginLeft: 'auto' }}>Kids</span>
+              )}
             </div>
           ))}
         </div>
@@ -544,7 +587,7 @@ setVttUploading(false)
 
         <div style={{ padding: '24px 28px', overflowY: 'auto', flex: 1 }}>
 
-          {/* DASHBOARD */}
+          {/* ═══ DASHBOARD ═══ */}
           {active === 'dashboard' && (
             <div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '24px' }}>
@@ -568,7 +611,10 @@ setVttUploading(false)
                       {m.poster_url && <img src={m.poster_url} alt={m.title} style={{ width: '28px', height: '40px', objectFit: 'cover', borderRadius: '3px', flexShrink: 0 }} />}
                       <div>
                         <div style={{ fontSize: '12px', fontWeight: 500 }}>{m.title}</div>
-                        <div style={{ fontSize: '11px', color: '#6b6b80' }}>{m.year} · {m.genre}</div>
+                        <div style={{ fontSize: '11px', color: '#6b6b80' }}>
+                          {m.year} · {m.genre}
+                          {m.is_kids && <span style={{ marginLeft: '6px', background: 'rgba(59,130,246,0.15)', color: '#3b82f6', fontSize: '10px', padding: '1px 5px', borderRadius: '3px' }}>Kids</span>}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -591,59 +637,17 @@ setVttUploading(false)
             </div>
           )}
 
-          {/* ADD MOVIE */}
+          {/* ═══ SHTO FILM (normal) ═══ */}
           {active === 'add' && (
             <div style={{ maxWidth: '900px' }}>
-              <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '20px', marginBottom: '24px' }}>
-                <div style={{ fontSize: '11px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>
-                  Kërko filmin — të dhënat plotësohen automatikisht
-                </div>
-                <div style={{ position: 'relative' }}>
-                  <input value={tmdbQuery} onChange={e => setTmdbQuery(e.target.value)}
-                    placeholder="Shkruaj emrin e filmit anglisht... (p.sh. Inception)"
-                    style={{ ...inp, paddingLeft: '40px' }} />
-                  <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px', color: '#6b6b80' }}>
-                    {tmdbSearching ? '⟳' : '⌕'}
-                  </span>
-                </div>
-                {tmdbResults.length > 0 && (
-                  <div style={{ marginTop: '8px', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', overflow: 'hidden' }}>
-                    {tmdbResults.map((m, i) => (
-                      <div key={m.id} onClick={() => selectTMDBMovie(m)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', cursor: 'pointer', borderBottom: i < tmdbResults.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(229,9,20,0.08)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                        {m.poster_path
-                          ? <img src={`${TMDB_IMG}/w92${m.poster_path}`} alt={m.title} style={{ width: '32px', height: '48px', objectFit: 'cover', borderRadius: '3px', flexShrink: 0 }} />
-                          : <div style={{ width: '32px', height: '48px', background: '#1a1a2e', borderRadius: '3px', flexShrink: 0 }} />}
-                        <div>
-                          <div style={{ fontSize: '13px', fontWeight: 500 }}>{m.title}</div>
-                          <div style={{ fontSize: '11px', color: '#6b6b80' }}>{m.release_date?.split('-')[0]} · ⭐ {m.vote_average?.toFixed(1)}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {selectedMovie && (
-                  <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '8px', padding: '10px 14px' }}>
-                    {selectedMovie.poster_path && <img src={`${TMDB_IMG}/w92${selectedMovie.poster_path}`} alt={selectedMovie.title} style={{ width: '32px', height: '48px', objectFit: 'cover', borderRadius: '3px' }} />}
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '13px', fontWeight: 500, color: '#22c55e' }}>{selectedMovie.title}</div>
-                      <div style={{ fontSize: '11px', color: '#6b6b80' }}>Të dhënat u plotësuan automatikisht nga TMDB</div>
-                    </div>
-                    <button onClick={() => { setSelectedMovie(null); setTmdbId(null) }}
-                      style={{ background: 'none', border: 'none', color: '#6b6b80', cursor: 'pointer', fontSize: '16px' }}>✕</button>
-                  </div>
-                )}
-              </div>
-
+              <TMDBSearchBlock hook={add} showToastFn={showToast} />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 {[
-                  { label: 'Titulli * (anglisht)', val: title, set: setTitle, ph: 'Inception' },
-                  { label: 'Titulli Shqip', val: titleSq, set: setTitleSq, ph: 'Fillimi' },
-                  { label: 'Viti', val: year, set: setYear, ph: '2025', type: 'number' },
-                  { label: 'Kohëzgjatja', val: duration, set: setDuration, ph: '2h 14min' },
-                  { label: 'Rating IMDb', val: rating, set: setRating, ph: '7.5', type: 'number' },
+                  { label: 'Titulli * (anglisht)', val: add.title, set: add.setTitle, ph: 'Inception' },
+                  { label: 'Titulli Shqip', val: add.titleSq, set: add.setTitleSq, ph: 'Fillimi' },
+                  { label: 'Viti', val: add.year, set: add.setYear, ph: '2025', type: 'number' },
+                  { label: 'Kohëzgjatja', val: add.duration, set: add.setDuration, ph: '2h 14min' },
+                  { label: 'Rating IMDb', val: add.rating, set: add.setRating, ph: '7.5', type: 'number' },
                 ].map(({ label, val, set, ph, type }) => (
                   <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>{label}</label>
@@ -652,36 +656,36 @@ setVttUploading(false)
                 ))}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                   <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Zhanri</label>
-                  <select value={genre} onChange={e => setGenre(e.target.value)} style={inp}>
+                  <select value={add.genre} onChange={e => add.setGenre(e.target.value)} style={inp}>
                     {['Aksion', 'Drama', 'Comedy', 'Sci-Fi', 'Thriller', 'Horror', 'Anime', 'Romance', 'Dokumentar'].map(g => <option key={g}>{g}</option>)}
                   </select>
                 </div>
                 <div style={{ gridColumn: '1/-1', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                   <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Përshkrimi</label>
-                  <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Përshkrimi shqip..." rows={3} style={{ ...inp, resize: 'vertical' }} />
+                  <textarea value={add.description} onChange={e => add.setDescription(e.target.value)} placeholder="Përshkrimi shqip..." rows={3} style={{ ...inp, resize: 'vertical' }} />
                 </div>
                 <div style={{ gridColumn: '1/-1', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                   <label style={{ fontSize: '10px', color: '#e50914', textTransform: 'uppercase', letterSpacing: '1px' }}>Video URL * — nga Bunny.net</label>
-                  <input value={videoUrl} onChange={e => setVideoUrl(e.target.value)}
+                  <input value={add.videoUrl} onChange={e => add.setVideoUrl(e.target.value)}
                     placeholder="https://iframe.mediadelivery.net/embed/647882/VIDEO_ID?captions=sq"
                     style={{ ...inp, borderColor: 'rgba(229,9,20,0.3)' }} />
                   <span style={{ fontSize: '11px', color: '#6b6b80' }}>Bunny.net → Stream → Library → kopjo Video ID</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                   <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    Poster URL {selectedMovie && <span style={{ color: '#22c55e' }}>✓ TMDB</span>}
+                    Poster URL {add.selectedMovie && <span style={{ color: '#22c55e' }}>✓ TMDB</span>}
                   </label>
-                  <input value={posterUrl} onChange={e => setPosterUrl(e.target.value)} placeholder="https://image.tmdb.org/t/p/w500/..." style={inp} />
+                  <input value={add.posterUrl} onChange={e => add.setPosterUrl(e.target.value)} placeholder="https://image.tmdb.org/t/p/w500/..." style={inp} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                   <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    Backdrop URL {selectedMovie && <span style={{ color: '#22c55e' }}>✓ TMDB</span>}
+                    Backdrop URL {add.selectedMovie && <span style={{ color: '#22c55e' }}>✓ TMDB</span>}
                   </label>
-                  <input value={backdropUrl} onChange={e => setBackdropUrl(e.target.value)} placeholder="https://image.tmdb.org/t/p/original/..." style={inp} />
+                  <input value={add.backdropUrl} onChange={e => add.setBackdropUrl(e.target.value)} placeholder="https://image.tmdb.org/t/p/original/..." style={inp} />
                 </div>
                 <div style={{ gridColumn: '1/-1', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                   <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Titra URL (.vtt) — opsionale</label>
-                  <input value={subtitleUrl} onChange={e => setSubtitleUrl(e.target.value)} placeholder="https://cinealsubtitles.b-cdn.net/film-sq.vtt" style={inp} />
+                  <input value={add.subtitleUrl} onChange={e => add.setSubtitleUrl(e.target.value)} placeholder="https://cinealsubtitles.b-cdn.net/film-sq.vtt" style={inp} />
                 </div>
                 <div style={{ gridColumn: '1/-1', display: 'flex', gap: '20px' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#b0b0c0' }}>
@@ -698,7 +702,7 @@ setVttUploading(false)
                     style={{ background: loading ? '#444' : '#e50914', border: 'none', color: '#fff', padding: '12px 28px', borderRadius: '5px', fontSize: '14px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer' }}>
                     {loading ? 'Duke shtuar...' : 'Shto Filmin'}
                   </button>
-                  <button onClick={resetForm}
+                  <button onClick={() => { add.reset(); setIsTrending(false); setIsFeatured(false) }}
                     style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#b0b0c0', padding: '12px 20px', borderRadius: '5px', fontSize: '13px', cursor: 'pointer' }}>
                     Pastro
                   </button>
@@ -707,7 +711,120 @@ setVttUploading(false)
             </div>
           )}
 
-          {/* MOVIES */}
+          {/* ═══ SHTO FILM KIDS ═══ */}
+          {active === 'add-kids' && (
+            <div style={{ maxWidth: '900px' }}>
+              {/* Info banner */}
+              <div style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '10px', padding: '14px 18px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '20px' }}>🧒</span>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 500, color: '#3b82f6' }}>Seksioni Kids</div>
+                  <div style={{ fontSize: '11px', color: '#6b6b80', marginTop: '2px' }}>
+                    Filmat e shtuar këtu do të shfaqen <strong style={{ color: '#b0b0c0' }}>vetëm te seksioni Kids</strong>. Nëse dëshiron t'i shfaqësh edhe gjetkë, ngarkoji edhe te "Shto Film".
+                  </div>
+                </div>
+              </div>
+
+              <TMDBSearchBlock hook={kids} showToastFn={showToast} />
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                {[
+                  { label: 'Titulli * (anglisht)', val: kids.title, set: kids.setTitle, ph: 'The Lion King' },
+                  { label: 'Titulli Shqip', val: kids.titleSq, set: kids.setTitleSq, ph: 'Mbreti Luan' },
+                  { label: 'Viti', val: kids.year, set: kids.setYear, ph: '2024', type: 'number' },
+                  { label: 'Kohëzgjatja', val: kids.duration, set: kids.setDuration, ph: '1h 30min' },
+                  { label: 'Rating IMDb', val: kids.rating, set: kids.setRating, ph: '7.5', type: 'number' },
+                ].map(({ label, val, set, ph, type }) => (
+                  <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>{label}</label>
+                    <input value={val} onChange={e => set(e.target.value)} placeholder={ph} type={type || 'text'} style={inp} />
+                  </div>
+                ))}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Zhanri</label>
+                  <select value={kids.genre} onChange={e => kids.setGenre(e.target.value)} style={inp}>
+                    {['Animacion', 'Aventurë', 'Comedy', 'Drama', 'Familje', 'Fantazi', 'Aksion'].map(g => <option key={g}>{g}</option>)}
+                  </select>
+                </div>
+                <div style={{ gridColumn: '1/-1', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Përshkrimi</label>
+                  <textarea value={kids.description} onChange={e => kids.setDescription(e.target.value)} placeholder="Përshkrimi shqip..." rows={3} style={{ ...inp, resize: 'vertical' }} />
+                </div>
+                <div style={{ gridColumn: '1/-1', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '10px', color: '#e50914', textTransform: 'uppercase', letterSpacing: '1px' }}>Video URL * — nga Bunny.net</label>
+                  <input value={kids.videoUrl} onChange={e => kids.setVideoUrl(e.target.value)}
+                    placeholder="https://iframe.mediadelivery.net/embed/647882/VIDEO_ID?captions=sq"
+                    style={{ ...inp, borderColor: 'rgba(229,9,20,0.3)' }} />
+                  <span style={{ fontSize: '11px', color: '#6b6b80' }}>Bunny.net → Stream → Library → kopjo Video ID</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    Poster URL {kids.selectedMovie && <span style={{ color: '#22c55e' }}>✓ TMDB</span>}
+                  </label>
+                  <input value={kids.posterUrl} onChange={e => kids.setPosterUrl(e.target.value)} placeholder="https://image.tmdb.org/t/p/w500/..." style={inp} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    Backdrop URL {kids.selectedMovie && <span style={{ color: '#22c55e' }}>✓ TMDB</span>}
+                  </label>
+                  <input value={kids.backdropUrl} onChange={e => kids.setBackdropUrl(e.target.value)} placeholder="https://image.tmdb.org/t/p/original/..." style={inp} />
+                </div>
+                <div style={{ gridColumn: '1/-1', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px' }}>Titra URL (.vtt) — opsionale</label>
+                  <input value={kids.subtitleUrl} onChange={e => kids.setSubtitleUrl(e.target.value)} placeholder="https://cinealsubtitles.b-cdn.net/film-sq.vtt" style={inp} />
+                </div>
+
+                {/* ── KATEGORITË KIDS ── */}
+                <div style={{ gridColumn: '1/-1' }}>
+                  <div style={{ background: '#12121a', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '10px', padding: '18px' }}>
+                    <div style={{ fontSize: '11px', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '14px' }}>
+                      Kategoria Kids * — zgjidhni të paktën një
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                      {KIDS_CATEGORIES.map(cat => {
+                        const isSelected = kidsCategory.includes(cat.id)
+                        return (
+                          <label key={cat.id}
+                            style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '10px 18px', borderRadius: '8px', border: `1px solid ${isSelected ? 'rgba(59,130,246,0.5)' : 'rgba(255,255,255,0.08)'}`, background: isSelected ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.02)', transition: 'all 0.15s' }}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={e => {
+                                if (e.target.checked) setKidsCategory(prev => [...prev, cat.id])
+                                else setKidsCategory(prev => prev.filter(c => c !== cat.id))
+                              }}
+                              style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
+                            />
+                            <span style={{ fontSize: '13px', fontWeight: 500, color: isSelected ? '#3b82f6' : '#b0b0c0' }}>
+                              {cat.label}
+                            </span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                    {kidsCategory.length === 0 && (
+                      <div style={{ fontSize: '11px', color: '#f5a623', marginTop: '10px' }}>
+                        ⚠ Zgjidh të paktën një kategori
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ gridColumn: '1/-1', display: 'flex', gap: '10px' }}>
+                  <button onClick={handleAddKids} disabled={loading}
+                    style={{ background: loading ? '#444' : '#3b82f6', border: 'none', color: '#fff', padding: '12px 28px', borderRadius: '5px', fontSize: '14px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer' }}>
+                    {loading ? 'Duke shtuar...' : '🧒 Shto Film Kids'}
+                  </button>
+                  <button onClick={() => { kids.reset(); setKidsCategory([]) }}
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#b0b0c0', padding: '12px 20px', borderRadius: '5px', fontSize: '13px', cursor: 'pointer' }}>
+                    Pastro
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ═══ MOVIES LIST ═══ */}
           {active === 'movies' && (
             <div>
               <div style={{ marginBottom: '16px', position: 'relative', display: 'inline-block' }}>
@@ -760,7 +877,7 @@ setVttUploading(false)
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                    {['', 'Titulli', 'Viti', 'Zhanri', 'Shikime', 'Status', 'Veprime'].map(h => (
+                    {['', 'Titulli', 'Viti', 'Zhanri', 'Tip', 'Shikime', 'Status', 'Veprime'].map(h => (
                       <th key={h} style={{ textAlign: 'left', padding: '9px 12px', fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 400 }}>{h}</th>
                     ))}
                   </tr>
@@ -774,6 +891,12 @@ setVttUploading(false)
                       <td style={{ padding: '10px 12px', fontSize: '13px', fontWeight: 500 }}>{m.title}</td>
                       <td style={{ padding: '10px 12px', fontSize: '12px', color: '#b0b0c0' }}>{m.year}</td>
                       <td style={{ padding: '10px 12px', fontSize: '12px', color: '#b0b0c0' }}>{m.genre}</td>
+                      <td style={{ padding: '10px 12px' }}>
+                        {m.is_kids
+                          ? <span style={{ background: 'rgba(59,130,246,0.12)', color: '#3b82f6', fontSize: '10px', padding: '2px 8px', borderRadius: '3px', border: '1px solid rgba(59,130,246,0.3)' }}>Kids</span>
+                          : <span style={{ background: 'rgba(255,255,255,0.05)', color: '#6b6b80', fontSize: '10px', padding: '2px 8px', borderRadius: '3px' }}>Normal</span>
+                        }
+                      </td>
                       <td style={{ padding: '10px 12px', fontSize: '12px', color: '#b0b0c0' }}>{m.views || 0}</td>
                       <td style={{ padding: '10px 12px' }}>
                         <span style={{ background: m.status === 'live' ? 'rgba(34,197,94,0.1)' : 'rgba(245,166,35,0.1)', color: m.status === 'live' ? '#22c55e' : '#f5a623', fontSize: '11px', padding: '2px 8px', borderRadius: '3px', border: `1px solid ${m.status === 'live' ? 'rgba(34,197,94,0.3)' : 'rgba(245,166,35,0.3)'}` }}>
@@ -799,7 +922,7 @@ setVttUploading(false)
             </div>
           )}
 
-          {/* USERS */}
+          {/* ═══ USERS ═══ */}
           {active === 'users' && (
             <div>
               <div style={{ marginBottom: '16px', position: 'relative', display: 'inline-block' }}>
@@ -869,24 +992,14 @@ setVttUploading(false)
             </div>
           )}
 
-          {/* TITRAT */}
+          {/* ═══ TITRAT ═══ */}
           {active === 'titrat' && (
             <div style={{ maxWidth: '700px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-              {/* API Key */}
               <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '20px' }}>
                 <div style={{ fontSize: '11px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>OpenAI API Key</div>
-                <input
-                  type="password"
-                  value={vttApiKey}
-                  onChange={e => setVttApiKey(e.target.value)}
-                  placeholder="sk-..."
-                  style={inp}
-                />
+                <input type="password" value={vttApiKey} onChange={e => setVttApiKey(e.target.value)} placeholder="sk-..." style={inp} />
                 <div style={{ fontSize: '11px', color: '#6b6b80', marginTop: '6px' }}>Nuk ruhet — vetëm për këtë sesion</div>
               </div>
-
-              {/* Upload VTT */}
               <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '20px' }}>
                 <div style={{ fontSize: '11px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Skedari .vtt anglisht</div>
                 <input ref={fileInputRef} type="file" accept=".vtt,.srt" style={{ display: 'none' }}
@@ -895,7 +1008,7 @@ setVttUploading(false)
                     if (f) { setVttFile(f); setVttFileName(f.name); setVttResult('') }
                   }} />
                 <div onClick={() => fileInputRef.current?.click()}
-                  style={{ border: '2px dashed rgba(255,255,255,0.1)', borderRadius: '8px', padding: '28px', textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.2s' }}
+                  style={{ border: '2px dashed rgba(255,255,255,0.1)', borderRadius: '8px', padding: '28px', textAlign: 'center', cursor: 'pointer' }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(229,9,20,0.4)')}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')}>
                   {vttFile ? (
@@ -913,35 +1026,17 @@ setVttUploading(false)
                   )}
                 </div>
               </div>
-
-              {/* Konteksti */}
               <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '20px' }}>
                 <div style={{ fontSize: '11px', color: '#6b6b80', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Konteksti i filmit</div>
-                <textarea
-                  value={vttContext}
-                  onChange={e => setVttContext(e.target.value)}
+                <textarea value={vttContext} onChange={e => setVttContext(e.target.value)}
                   placeholder="Shembull: Film aksion 'Inception' (2010) me Leonardo DiCaprio. Personazhet kryesorë: Cobb, Arthur, Ariadne, Mal. Toni është serioz dhe filozofik."
-                  rows={4}
-                  style={{ ...inp, resize: 'vertical' }}
-                />
-                <div style={{ fontSize: '11px', color: '#6b6b80', marginTop: '6px' }}>
-                  Sa më shumë kontekst, aq më i mirë perkthimi
-                </div>
+                  rows={4} style={{ ...inp, resize: 'vertical' }} />
+                <div style={{ fontSize: '11px', color: '#6b6b80', marginTop: '6px' }}>Sa më shumë kontekst, aq më i mirë perkthimi</div>
               </div>
-
-              {/* Butoni Përktho */}
               <button onClick={handleTranslate} disabled={vttTranslating || !vttFile || !vttApiKey || !vttContext}
-                style={{
-                  background: vttTranslating || !vttFile || !vttApiKey || !vttContext ? '#2a2a3a' : '#e50914',
-                  border: 'none', color: vttTranslating || !vttFile || !vttApiKey || !vttContext ? '#6b6b80' : '#fff',
-                  padding: '14px 28px', borderRadius: '8px', fontSize: '14px', fontWeight: 600,
-                  cursor: vttTranslating || !vttFile || !vttApiKey || !vttContext ? 'not-allowed' : 'pointer',
-                  width: '100%',
-                }}>
+                style={{ background: vttTranslating || !vttFile || !vttApiKey || !vttContext ? '#2a2a3a' : '#e50914', border: 'none', color: vttTranslating || !vttFile || !vttApiKey || !vttContext ? '#6b6b80' : '#fff', padding: '14px 28px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: vttTranslating || !vttFile || !vttApiKey || !vttContext ? 'not-allowed' : 'pointer', width: '100%' }}>
                 {vttTranslating ? 'Duke përkthyer...' : 'Përktho në Shqip'}
               </button>
-
-              {/* Progress */}
               {vttTranslating && (
                 <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '20px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -949,49 +1044,32 @@ setVttUploading(false)
                     <span style={{ fontSize: '12px', color: '#6b6b80' }}>{vttProgress}/{vttTotal}</span>
                   </div>
                   <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div style={{
-                      height: '100%', borderRadius: '3px', background: '#e50914',
-                      width: vttTotal > 0 ? `${(vttProgress / vttTotal) * 100}%` : '0%',
-                      transition: 'width 0.4s ease',
-                    }} />
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#6b6b80', marginTop: '8px' }}>
-                    {vttTotal > 0 && `~${Math.ceil((vttTotal - vttProgress) * 3)} sekonda mbeten`}
+                    <div style={{ height: '100%', borderRadius: '3px', background: '#e50914', width: vttTotal > 0 ? `${(vttProgress / vttTotal) * 100}%` : '0%', transition: 'width 0.4s ease' }} />
                   </div>
                 </div>
               )}
-
-              {/* Rezultati */}
               {vttResult && (
                 <div style={{ background: '#12121a', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '10px', padding: '20px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <div>
-                      <div style={{ fontSize: '13px', fontWeight: 500, color: '#22c55e' }}>Perkthimi u krye!</div>
-                      <div style={{ fontSize: '11px', color: '#6b6b80', marginTop: '2px' }}>
-                        {vttResult.split('\n').length} rreshta · gati për Bunny CDN
-                      </div>
-                    </div>
+                    <div style={{ fontSize: '13px', fontWeight: 500, color: '#22c55e' }}>Perkthimi u krye!</div>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button onClick={handleDownloadVtt}
                         style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>
                         Shkarko .vtt
                       </button>
                       {!vttUploadedUrl && (
-  <button onClick={handleUploadToBunny} disabled={vttUploading}
-    style={{ background: vttUploading ? '#2a2a3a' : '#f5a623', border: 'none', color: vttUploading ? '#6b6b80' : '#000', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: vttUploading ? 'not-allowed' : 'pointer' }}>
-    {vttUploading ? 'Duke ngarkuar...' : 'Ngarko te Bunny'}
-  </button>
-)}
+                        <button onClick={handleUploadToBunny} disabled={vttUploading}
+                          style={{ background: vttUploading ? '#2a2a3a' : '#f5a623', border: 'none', color: vttUploading ? '#6b6b80' : '#000', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: vttUploading ? 'not-allowed' : 'pointer' }}>
+                          {vttUploading ? 'Duke ngarkuar...' : 'Ngarko te Bunny'}
+                        </button>
+                      )}
                     </div>
                   </div>
-
-                  {/* URL pas ngarkimit */}
                   {vttUploadedUrl && (
                     <div style={{ background: 'rgba(245,166,35,0.06)', border: '1px solid rgba(245,166,35,0.2)', borderRadius: '6px', padding: '12px', marginBottom: '12px' }}>
                       <div style={{ fontSize: '11px', color: '#f5a623', marginBottom: '6px', fontWeight: 500 }}>CDN URL — kopjo te admin filmi:</div>
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <input readOnly value={vttUploadedUrl}
-                          style={{ ...inp, fontSize: '11px', fontFamily: 'monospace', flex: 1 }} />
+                        <input readOnly value={vttUploadedUrl} style={{ ...inp, fontSize: '11px', fontFamily: 'monospace', flex: 1 }} />
                         <button onClick={() => { navigator.clipboard.writeText(vttUploadedUrl); showToast('URL u kopjua!') }}
                           style={{ background: '#f5a623', border: 'none', color: '#000', padding: '10px 14px', borderRadius: '5px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
                           Kopjo
@@ -999,19 +1077,13 @@ setVttUploading(false)
                       </div>
                     </div>
                   )}
-
-                  <textarea
-                    readOnly value={vttResult}
-                    rows={8}
-                    style={{ ...inp, resize: 'vertical', fontSize: '11px', color: '#6b6b80', fontFamily: 'monospace' }}
-                  />
+                  <textarea readOnly value={vttResult} rows={8} style={{ ...inp, resize: 'vertical', fontSize: '11px', color: '#6b6b80', fontFamily: 'monospace' }} />
                 </div>
               )}
-
             </div>
           )}
 
-          {/* SETTINGS */}
+          {/* ═══ SETTINGS ═══ */}
           {active === 'settings' && (
             <div style={{ maxWidth: '620px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ background: '#12121a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '20px' }}>
