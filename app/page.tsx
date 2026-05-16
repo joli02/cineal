@@ -133,7 +133,7 @@ export default function HomePage() {
             </div>
             {featured.description && (
               <p style={{ fontSize: '14px', color: '#b0b0c0', lineHeight: 1.6, marginBottom: '24px', maxWidth: '460px' }}>
-                {featured.description.substring(0, 160)}{featured.description.length > 160 ? '...' : ''}
+                {featured.description.substring(0, 500)}{featured.description.length > 500 ? '...' : ''}
               </p>
             )}
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
