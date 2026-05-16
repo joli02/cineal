@@ -6,9 +6,14 @@ import { Movie } from '@/lib/supabase'
 function isTVDevice(): boolean {
   if (typeof window === 'undefined') return false
   const ua = navigator.userAgent.toLowerCase()
-  return ua.includes('tv') || ua.includes('smarttv') || ua.includes('googletv') ||
-    ua.includes('androidtv') || ua.includes('hbbtv') || ua.includes('netcast') ||
+  return (
+    ua.includes('tv') || ua.includes('smarttv') ||
+    ua.includes('googletv') || ua.includes('androidtv') ||
+    ua.includes('hbbtv') || ua.includes('netcast') ||
+    ua.includes('playstation') || ua.includes('ps4') || ua.includes('ps5') ||
+    ua.includes('whale') || ua.includes('viera') || ua.includes('roku') ||
     (ua.includes('android') && !ua.includes('mobile') && !ua.includes('tablet'))
+  )
 }
 
 export default function VideoPlayer({
@@ -23,11 +28,19 @@ export default function VideoPlayer({
   const isTV = typeof window !== 'undefined' && isTVDevice()
 
   if (isTV && movie.embed_url) {
+    // Hiq parametrat që nuk mbështeten nga TV/PlayStation
+    const tvEmbedUrl = movie.embed_url.split('?')[0]
+
     return (
       <div style={{ background: '#000', borderRadius: '12px', overflow: 'hidden' }}>
         <div style={{ position: 'relative', paddingTop: '56.25%' }}>
-          <iframe src={movie.embed_url} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
-            allowFullScreen allow="autoplay; fullscreen" title={movie.title} />
+          <iframe
+            src={tvEmbedUrl}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+            allowFullScreen
+            allow="autoplay; fullscreen"
+            title={movie.title}
+          />
         </div>
       </div>
     )
@@ -61,7 +74,6 @@ export default function VideoPlayer({
         hls.loadSource(movie.video_url!)
         hls.attachMedia(video)
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          // Apply startTime before playing
           if (startTime > 0 && !startTimeApplied.current) {
             video.currentTime = startTime
             startTimeApplied.current = true
