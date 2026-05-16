@@ -127,7 +127,7 @@ export default function FilmPage() {
           </div>
           {(movie.description_sq || movie.description) && (
             <p style={{ fontSize: '14px', color: '#b0b0c0', lineHeight: 1.6, marginBottom: '24px', maxWidth: '460px' }}>
-              {(movie.description_sq || movie.description).substring(0, 160)}{(movie.description_sq || movie.description).length > 160 ? '...' : ''}
+              {(movie.description_sq || movie.description).substring(0, 500)}{(movie.description_sq || movie.description).length > 500 ? '...' : ''}
             </p>
           )}
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
