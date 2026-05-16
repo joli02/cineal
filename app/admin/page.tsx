@@ -377,6 +377,7 @@ export default function AdminPage() {
     fetchMovies(); fetchStats()
   }
 
+  // ── NDRYSHIM 1: handleSaveEdit — shtohen description, is_filma_shqip, is_old_movies ──
   const handleSaveEdit = async () => {
     if (!editMovie) return
     setLoading(true)
@@ -385,10 +386,13 @@ export default function AdminPage() {
         title: editMovie.title, title_sq: editMovie.title_sq,
         year: editMovie.year, genre: editMovie.genre,
         duration: editMovie.duration, rating: editMovie.rating,
-        description: editMovie.description, video_url: editMovie.video_url,
+        description: editMovie.description,
+        video_url: editMovie.video_url,
         poster_url: editMovie.poster_url, backdrop_url: editMovie.backdrop_url,
         subtitle_url: editMovie.subtitle_url, is_trending: editMovie.is_trending,
         status: editMovie.status,
+        is_filma_shqip: editMovie.is_filma_shqip ?? false,
+        is_old_movies: editMovie.is_old_movies ?? false,
       }).eq('id', editMovie.id)
       if (error) throw error
       showToast('Film u përditësua!')
@@ -805,10 +809,14 @@ export default function AdminPage() {
                 <input value={movieSearch} onChange={e => setMovieSearch(e.target.value)}
                   placeholder="Kërko film, zhanër, vit..." style={{ ...INP, width: '280px', paddingLeft: '36px' }} />
               </div>
+
+              {/* ── NDRYSHIM 2: Formulari i editimit — shtohen Përshkrimi + Filma Shqip + Old Movies ── */}
               {editMovie && (
                 <div style={{ background: '#12121a', border: '1px solid rgba(229,9,20,0.3)', borderRadius: '10px', padding: '20px', marginBottom: '20px' }}>
                   <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '16px', color: '#e50914' }}>Po edito: {editMovie.title}</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+
+                    {/* Fushat input standarde */}
                     {[
                       { label: 'Titulli', key: 'title' }, { label: 'Titulli Shqip', key: 'title_sq' },
                       { label: 'Viti', key: 'year' }, { label: 'Rating', key: 'rating' },
@@ -821,16 +829,39 @@ export default function AdminPage() {
                         <input value={editMovie[key] || ''} onChange={e => setEditMovie({ ...editMovie, [key]: e.target.value })} style={INP} />
                       </div>
                     ))}
-                    <div style={{ gridColumn: '1/-1', display: 'flex', gap: '16px' }}>
+
+                    {/* Përshkrimi — textarea me gjerësi të plotë */}
+                    <div style={{ gridColumn: '1/-1', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '10px', color: '#6b6b80', textTransform: 'uppercase' }}>Përshkrimi</label>
+                      <textarea
+                        value={editMovie.description || ''}
+                        onChange={e => setEditMovie({ ...editMovie, description: e.target.value })}
+                        rows={3}
+                        style={{ ...INP, resize: 'vertical' }}
+                      />
+                    </div>
+
+                    {/* Checkboxat: Trending, Live, Filma Shqip, Old Movies */}
+                    <div style={{ gridColumn: '1/-1', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#b0b0c0', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={!!editMovie.is_trending} onChange={e => setEditMovie({ ...editMovie, is_trending: e.target.checked })} style={{ accentColor: '#e50914' }} />
+                        <input type="checkbox" checked={!!editMovie.is_trending} onChange={e => setEditMovie({ ...editMovie, is_trending: e.target.checked })} style={{ accentColor: '#e50914', width: '15px', height: '15px' }} />
                         Trending
                       </label>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#b0b0c0', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={editMovie.status === 'live'} onChange={e => setEditMovie({ ...editMovie, status: e.target.checked ? 'live' : 'draft' })} style={{ accentColor: '#22c55e' }} />
+                        <input type="checkbox" checked={editMovie.status === 'live'} onChange={e => setEditMovie({ ...editMovie, status: e.target.checked ? 'live' : 'draft' })} style={{ accentColor: '#22c55e', width: '15px', height: '15px' }} />
                         Live
                       </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#f5a623', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={!!editMovie.is_filma_shqip} onChange={e => setEditMovie({ ...editMovie, is_filma_shqip: e.target.checked })} style={{ accentColor: '#f5a623', width: '15px', height: '15px' }} />
+                        Filma Shqip
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#a855f7', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={!!editMovie.is_old_movies} onChange={e => setEditMovie({ ...editMovie, is_old_movies: e.target.checked })} style={{ accentColor: '#a855f7', width: '15px', height: '15px' }} />
+                        Old Movies
+                      </label>
                     </div>
+
+                    {/* Butonat */}
                     <div style={{ gridColumn: '1/-1', display: 'flex', gap: '10px' }}>
                       <button onClick={handleSaveEdit} disabled={loading}
                         style={{ background: '#22c55e', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '5px', fontSize: '13px', cursor: 'pointer', fontWeight: 500 }}>
@@ -844,6 +875,7 @@ export default function AdminPage() {
                   </div>
                 </div>
               )}
+
               <div style={{ fontSize: '11px', color: '#6b6b80', marginBottom: '10px' }}>
                 {filteredMovies.length} filma{movieSearch ? ` — rezultate për "${movieSearch}"` : ''}
               </div>
@@ -867,6 +899,10 @@ export default function AdminPage() {
                       <td style={{ padding: '10px 12px' }}>
                         {m.is_kids
                           ? <span style={{ background: 'rgba(59,130,246,0.12)', color: '#3b82f6', fontSize: '10px', padding: '2px 8px', borderRadius: '3px', border: '1px solid rgba(59,130,246,0.3)' }}>Kids</span>
+                          : m.is_filma_shqip
+                          ? <span style={{ background: 'rgba(245,166,35,0.12)', color: '#f5a623', fontSize: '10px', padding: '2px 8px', borderRadius: '3px', border: '1px solid rgba(245,166,35,0.3)' }}>🇦🇱 Shqip</span>
+                          : m.is_old_movies
+                          ? <span style={{ background: 'rgba(168,85,247,0.12)', color: '#a855f7', fontSize: '10px', padding: '2px 8px', borderRadius: '3px', border: '1px solid rgba(168,85,247,0.3)' }}>Old</span>
                           : <span style={{ background: 'rgba(255,255,255,0.05)', color: '#6b6b80', fontSize: '10px', padding: '2px 8px', borderRadius: '3px' }}>Normal</span>}
                       </td>
                       <td style={{ padding: '10px 12px', fontSize: '12px', color: '#b0b0c0' }}>{m.views || 0}</td>
